@@ -244,8 +244,6 @@ function App() {
   function handleSelectEpisode(episodeId: string) {
     dispatch({ type: "setSelectedEpisodeId", value: episodeId });
     dispatch({ type: "setSelectedFolderId", value: null });
-    dispatch({ type: "setSelectedClips", value: new Set() });
-    dispatch({ type: "setFocusedClip", value: null });
 
     const episode = state.episodes.find((e) => e.id === episodeId);
     dispatch({ type: "setImportedVideoPath", value: episode ? episode.videoPath : null });
@@ -259,8 +257,6 @@ function App() {
     dispatch({ type: "setSelectedEpisodeId", value: episodeId });
     dispatch({ type: "setOpenedEpisodeId", value: episodeId });
     dispatch({ type: "setSelectedFolderId", value: null });
-    dispatch({ type: "setSelectedClips", value: new Set() });
-    dispatch({ type: "setFocusedClip", value: null });
     dispatch({ type: "setImportedVideoPath", value: episode.videoPath });
     dispatch({ type: "setClips", value: episode.clips });
   }
@@ -271,8 +267,6 @@ function App() {
   ) {
     dispatch({ type: "setSelectedEpisodeId", value: episodeId ?? null });
     dispatch({ type: "setSelectedFolderId", value: null });
-    dispatch({ type: "setSelectedClips", value: new Set() });
-    dispatch({ type: "setFocusedClip", value: null });
 
     if (episodeId && Array.isArray(episodesList)) {
       const episode = episodesList.find((e) => e.id === episodeId);
