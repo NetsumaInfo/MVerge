@@ -12,7 +12,7 @@ use crate::utils::process::apply_no_window;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-struct TimelineXmlClip {
+pub(crate) struct TimelineXmlClip {
     id: String,
     src: String,
     original_name: Option<String>,
