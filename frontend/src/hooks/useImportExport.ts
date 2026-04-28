@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { ClipItem, EpisodeEntry } from "../types/domain"
 import { fileNameFromPath, truncateFileName, detectScenes } from "../utils/episodeUtils";
 type ImportExportProps = {
-  abortedRef: React.MutableRefObject<boolean>;
+  abortedRef: React.RefObject<boolean>;
   clips: ClipItem[];
   setFocusedClip: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedClips: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -21,6 +21,7 @@ type ImportExportProps = {
   setExportDir: React.Dispatch<React.SetStateAction<string | null>>;
   setProgress: React.Dispatch<React.SetStateAction<number>>;
   setProgressMsg: React.Dispatch<React.SetStateAction<string>>;
+  episodesPath: string | null;
 };
 
 export default function useImportExport(props: ImportExportProps) {
@@ -89,9 +90,9 @@ export default function useImportExport(props: ImportExportProps) {
       props.setVideoIsHEVC(null);
       setImportToken(Date.now().toString());
 
-      const formatted = await detectScenes(file, episodeId);
+      const formatted = await detectScenes(file, episodeId, props.episodesPath);
 
-      // A newer import started while we were waiting — discard stale results.
+      // A newer import started while we were waiting - discard stale results.
       if (importGenRef.current !== gen) return;
 
       const inferredName = formatted[0]?.originalName || fileNameFromPath(file);
@@ -150,11 +151,14 @@ export default function useImportExport(props: ImportExportProps) {
         props.setProgressMsg("Starting...");
 
         try {
-          const formatted = await detectScenes(file, episodeId);
+          const formatted = await detectScenes(file, episodeId, props.episodesPath);
 
           if (props.abortedRef.current || importGenRef.current !== gen) {
             // Aborted or superseded mid-flight — clean up this episode's cache
-            invoke("delete_episode_cache", { episodeCacheId: episodeId }).catch(() => {});
+            invoke("delete_episode_cache", {
+              episodeCacheId: episodeId,
+              customPath: props.episodesPath,
+            }).catch(() => {});
             break;
           }
 
@@ -173,11 +177,17 @@ export default function useImportExport(props: ImportExportProps) {
           props.setEpisodes((prev) => [episodeEntry, ...prev]);
         } catch (err) {
           if (props.abortedRef.current) {
-            invoke("delete_episode_cache", { episodeCacheId: episodeId }).catch(() => {});
+            invoke("delete_episode_cache", {
+              episodeCacheId: episodeId,
+              customPath: props.episodesPath,
+            }).catch(() => {});
             break;
           }
           console.error(`Detection failed for ${fileName}:`, err);
-          invoke("delete_episode_cache", { episodeCacheId: episodeId }).catch(() => {});
+          invoke("delete_episode_cache", {
+            episodeCacheId: episodeId,
+            customPath: props.episodesPath,
+          }).catch(() => {});
         }
       }
 
