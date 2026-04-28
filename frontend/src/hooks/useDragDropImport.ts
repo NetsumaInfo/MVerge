@@ -13,16 +13,6 @@ export default function useDragDropImport({
   handleBatchImport,
 }: UseDragDropImportProps) {
   const lastExternalDropRef = useRef<{ path: string; ts: number } | null>(null);
-  const handleImportRef = useRef(handleImport);
-  const handleBatchImportRef = useRef(handleBatchImport);
-
-  useEffect(() => {
-    handleImportRef.current = handleImport;
-  }, [handleImport]);
-
-  useEffect(() => {
-    handleBatchImportRef.current = handleBatchImport;
-  }, [handleBatchImport]);
 
   useEffect(() => {
     let disposed = false;
@@ -61,9 +51,9 @@ export default function useDragDropImport({
         if (videoFiles.length === 0) return;
 
         if (videoFiles.length === 1) {
-          void handleImportRef.current(videoFiles[0]);
+          void handleImport(videoFiles[0]);
         } else {
-          void handleBatchImportRef.current(videoFiles);
+          void handleBatchImport(videoFiles);
         }
 
         return;
@@ -92,5 +82,5 @@ export default function useDragDropImport({
 
       void unlistenPromise.then((stop) => stop());
     };
-  }, [setIsDragging]);
+  }, [setIsDragging, handleImport, handleBatchImport]);
 }

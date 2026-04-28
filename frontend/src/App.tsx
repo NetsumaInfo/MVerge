@@ -356,32 +356,21 @@ function App() {
 
   // Effects
   useEffect(() => {
-    let disposed = false;
     let unlisten: (() => void) | null = null;
 
     (async () => {
-      try {
-        const stop = await listen<{ percent: number; message: string }>(
-          "scene_progress",
-          (event: Event<{ percent: number; message: string }>) => {
-            setProgress(event.payload.percent);
-            setProgressMsg(event.payload.message);
-          }
-        );
-
-        if (disposed) {
-          stop();
-          return;
+      const stop = await listen<{ percent: number; message: string }>(
+        "scene_progress",
+        (event: Event<{ percent: number; message: string }>) => {
+          setProgress(event.payload.percent);
+          setProgressMsg(event.payload.message);
         }
+      );
 
-        unlisten = stop;
-      } catch (err) {
-        console.error("scene_progress listen failed:", err);
-      }
+      unlisten = stop;
     })();
 
     return () => {
-      disposed = true;
       if (unlisten) unlisten();
     };
   }, []);
