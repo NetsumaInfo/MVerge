@@ -121,3 +121,167 @@
     background: #1a1a1a;
     color: white;
 }
+
+.settings-help-line {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin: -4px 0 16px 24px;
+}
+
+.settings-text-input {
+    width: 240px;
+    height: 34px;
+    padding: 0 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+}
+
+.settings-text-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.25);
+}
+
+.settings-icon-input {
+    width: 84px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.settings-export-dropdown {
+    min-width: 240px;
+    width: 240px !important;
+}
+
+.settings-profile-dropdown {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.settings-profile-dropdown .dropdown-trigger {
+    height: 44px !important;
+    align-items: center;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+}
+
+.settings-profile-dropdown .dropdown-menu {
+    max-height: none;
+    overflow: visible;
+}
+
+.export-settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.export-profile-actions {
+    display: flex;
+    gap: 8px;
+    margin: -4px 0 16px 24px;
+}
+
+.export-profile-actions .buttons {
+    margin: 0;
+    width: auto;
+    padding: 0 14px;
+}
+
+.export-icon-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -4px 0 16px 24px;
+}
+
+.export-icon-chip {
+    width: 42px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.export-icon-chip:hover {
+    border-color: rgba(var(--accent-rgb), 0.6);
+    background: rgba(var(--accent-rgb), 0.14);
+}
+
+.export-icon-chip.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.24);
+    background: rgba(var(--accent-rgb), 0.22);
+}
+
+.settings-icon-preview {
+    display: inline-flex;
+    align-items: center;
+}
+
+.export-profile-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.export-profile-icon-image {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.export-profile-icon-glyph {
+    border: 1px solid rgba(255,255,255,0.24);
+    background: rgba(255,255,255,0.08);
+}
+
+.export-profile-glyph-svg {
+    width: 12px;
+    height: 12px;
+}
+
+.export-profile-icon-glyph.h264 {
+    color: #8ab8ff;
+    background: rgba(138, 184, 255, 0.14);
+}
+
+.export-profile-icon-glyph.h265 {
+    color: #9ef6ca;
+    background: rgba(158, 246, 202, 0.14);
+}
+
+.export-profile-icon-glyph.dnxhd_dnxhr {
+    color: #ffc98a;
+    background: rgba(255, 201, 138, 0.14);
+}
+
+.export-profile-icon-glyph.prores {
+    color: #d6b8ff;
+    background: rgba(214, 184, 255, 0.14);
+}
+
+.export-profile-icon-glyph.xml,
+.export-profile-icon-glyph.timeline {
+    color: #8fd9ff;
+    background: rgba(143, 217, 255, 0.14);
+}
+
+.editor-target-icon-wrap {
+    width: 24px;
+    height: 24px;
+}

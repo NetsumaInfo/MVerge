@@ -1,32 +1,18 @@
 import VideoPlayer from "./videoPlayer/VideoPlayer.tsx"
 import HowToUse from "./HowToUse.tsx"
 import React from "react";
-import { FaFolderOpen, FaFileExport, FaVideo, FaLayerGroup, FaFolder, FaRocket, FaCodeBranch } from "react-icons/fa";
-import { GeneralSettings } from "../../settings/generalSettings";
+import { FaFolderOpen, FaFileExport, FaFolder, FaRocket } from "react-icons/fa";
+import {
+  type GeneralSettings,
+  getActiveExportProfile,
+  getCodecLabel,
+  getCodecProfileLabel,
+  getEditorTargetLabel,
+  isVideoWorkflow,
+} from "../../settings/generalSettings";
 import { type EditorTarget } from "../../hooks/useImportExport";
-import Dropdown from "../common/Dropdown";
-import premiereIcon from "../../assets/editor-icons/adobepremierepro.svg";
-import afterEffectsIcon from "../../assets/editor-icons/adobeaftereffects.svg";
-import davinciIcon from "../../assets/editor-icons/davinciresolve.svg";
-
-const EXPORT_OPTIONS = [
-  { value: "mp4", label: "MP4" },
-  { value: "mkv", label: "MKV" },
-  { value: "mov", label: "MOV" },
-  { value: "avi", label: "AVI" },
-  { value: "xml", label: "XML" },
-];
-
-const EDITOR_TARGETS: {
-  value: EditorTarget;
-  label: string;
-  className: string;
-  icon: string;
-}[] = [
-  { value: "premiere", label: "Premiere Pro", className: "premiere", icon: premiereIcon },
-  { value: "after_effects", label: "After Effects", className: "after-effects", icon: afterEffectsIcon },
-  { value: "davinci_resolve", label: "DaVinci Resolve", className: "davinci", icon: davinciIcon },
-];
+import Dropdown, { type DropdownOption } from "../common/Dropdown";
+import ExportProfileIcon from "../common/ExportProfileIcon";
 
 type PreviewContainerProps = {
   focusedClip: string | null;
@@ -53,11 +39,39 @@ type PreviewContainerProps = {
   setGeneralSettings: React.Dispatch<React.SetStateAction<GeneralSettings>>;
 };
 
+type ProfileDropdownOption = DropdownOption<string> & {
+  icon: ReturnType<typeof getActiveExportProfile>["icon"];
+  meta: string;
+};
+
 export default function PreviewContainer (props: PreviewContainerProps) {
-  const [mergeEnabled, setMergeEnabled] = React.useState(true);
-  const [editorTarget, setEditorTarget] = React.useState<EditorTarget>("premiere");
   const [showMergeNameModal, setShowMergeNameModal] = React.useState(false);
   const mergeNameInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const activeProfile = getActiveExportProfile(props.generalSettings);
+  const profileMeta = (profile: typeof activeProfile): string => {
+    if (!isVideoWorkflow(profile.workflow)) {
+      if (profile.workflow === "xml_timeline") {
+        return "Final Cut XML timeline export";
+      }
+      return `Original cut to ${getEditorTargetLabel(profile.editorTarget)}`;
+    }
+
+    const codec = getCodecLabel(profile.codec);
+    const codecProfile = getCodecProfileLabel(profile.codec, profile.codecProfile);
+    const base = `${codec} / ${codecProfile} / ${profile.format.toUpperCase()}`;
+    if (profile.workflow === "video_and_editor") {
+      return `${base} -> ${getEditorTargetLabel(profile.editorTarget)}`;
+    }
+    return base;
+  };
+
+  const profileOptions: ProfileDropdownOption[] = props.generalSettings.exportProfiles.map((profile) => ({
+    value: profile.id,
+    label: profile.name,
+    icon: profile.icon,
+    meta: profileMeta(profile),
+  }));
 
   React.useEffect(() => {
     if (showMergeNameModal) {
@@ -68,25 +82,44 @@ export default function PreviewContainer (props: PreviewContainerProps) {
     }
   }, [showMergeNameModal]);
 
+  const videoWorkflow = isVideoWorkflow(activeProfile.workflow);
+
+  const renderProfileDropdownContent = (optionBase: DropdownOption<string> | undefined) => {
+    const option = optionBase as ProfileDropdownOption | undefined;
+    if (!option) return null;
+
+    return (
+      <div className="profile-dropdown-content">
+        <ExportProfileIcon icon={option.icon} className="profile-dropdown-icon" />
+        <span className="profile-dropdown-text">
+          <span className="profile-dropdown-title">{option.label}</span>
+          <span className="profile-dropdown-meta">{option.meta}</span>
+        </span>
+      </div>
+    );
+  };
+
   const onExportClick = () => {
-    if (mergeEnabled) {
+    if (videoWorkflow && activeProfile.mergeClips) {
       setShowMergeNameModal(true);
-    } else {
-      props.handleExport(props.selectedClips, false, undefined, editorTarget);
+      return;
     }
+
+    props.handleExport(props.selectedClips, false);
   };
 
   const confirmMergeExport = () => {
     const value = (mergeNameInputRef.current?.value ?? "").trim();
     if (!value) return;
     setShowMergeNameModal(false);
-    props.handleExport(props.selectedClips, true, value, editorTarget);
+    props.handleExport(props.selectedClips, true, value);
   };
+
   return (
     <main  className="preview-container" >
       <div className="preview-window">
         {props.focusedClip ? (
-          <VideoPlayer 
+          <VideoPlayer
            selectedClip={props.focusedClip}
            videoIsHEVC={props.videoIsHEVC}
            userHasHEVC={props.userHasHEVC}
@@ -97,69 +130,28 @@ export default function PreviewContainer (props: PreviewContainerProps) {
             <p>No clip selected</p>
         )}
       </div>
+
       <div className="export-panel">
         <div className="export-header">
           <FaFileExport className="header-icon" />
-          <span className="export-title">EXPORT SETTINGS</span>
+          <span className="export-title">EXPORT PROFILE</span>
         </div>
 
-        <div className="export-settings-row">
-          <div className="export-setting-group">
-            <label className="export-label">
-              <FaVideo className="label-icon" /> Format
-            </label>
-            <Dropdown
-              className="export-format-select"
-              options={EXPORT_OPTIONS}
-              value={props.generalSettings.exportFormat}
-              onChange={(val) =>
-                props.setGeneralSettings((prev) => ({
-                  ...prev,
-                  exportFormat: val as any,
-                }))
-              }
-            />
-          </div>
-
-          <div className="export-setting-group">
-            <label className="export-label">
-              <FaLayerGroup className="label-icon" /> Options
-            </label>
-            <div className="checkbox-row">
-              <label className="custom-checkbox">
-                <input 
-                  type="checkbox"
-                  className="checkbox"
-                  checked={mergeEnabled}
-                  onChange={(e) => setMergeEnabled(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-              <p>Merge clips</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="export-target-section">
-          <label className="export-label">
-            <FaLayerGroup className="label-icon" /> Send To
-          </label>
-          <div className="editor-target-grid">
-            {EDITOR_TARGETS.map(({ value, label, className, icon }) => (
-              <button
-                key={value}
-                type="button"
-                className={`editor-target-chip ${className} ${editorTarget === value ? "active" : ""}`}
-                onClick={() => setEditorTarget(value)}
-                title={`Send to ${label}`}
-                aria-label={`Send to ${label}`}
-              >
-                <span className={`editor-brand-icon ${className}`}>
-                  <img src={icon} alt={label} className="editor-target-icon" />
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="export-setting-group">
+          <label className="export-label">Profile</label>
+          <Dropdown
+            className="export-profile-select preview-profile-dropdown"
+            options={profileOptions}
+            value={activeProfile.id}
+            renderValue={renderProfileDropdownContent}
+            renderOption={(option) => renderProfileDropdownContent(option)}
+            onChange={(value) =>
+              props.setGeneralSettings((prev) => ({
+                ...prev,
+                activeExportProfileId: value,
+              }))
+            }
+          />
         </div>
 
         <div className="export-path-section">
@@ -184,22 +176,15 @@ export default function PreviewContainer (props: PreviewContainerProps) {
           </div>
         </div>
 
-        <button 
-          className="buttons export-main-button" 
+        <button
+          className="buttons export-main-button"
           id="file-button"
           onClick={onExportClick}
         >
           <FaRocket className="btn-icon" /> Export Now
         </button>
-        <button
-          className="buttons export-original-button"
-          onClick={() => props.handleExportOriginal(props.selectedClips, editorTarget)}
-          title={`Send original timeline cut to ${EDITOR_TARGETS.find((t) => t.value === editorTarget)?.label ?? "editor"}`}
-        >
-          <FaCodeBranch className="btn-icon" /> Export Original Cut
-        </button>
       </div>
-      
+
       <HowToUse/>
 
       {showMergeNameModal && (

@@ -12,7 +12,7 @@ import {
 import {
   loadGeneralSettings,
   saveGeneralSettings,
-  DEFAULT_GENERAL_SETTINGS,
+  buildDefaultGeneralSettings,
   type GeneralSettings,
 } from "./settings/generalSettings";
 
@@ -88,8 +88,9 @@ function App() {
       const defaultEpisodesPath = await invoke<string>("get_default_episodes_dir");
 
       remapEpisodePaths(resolvedOldPath, defaultEpisodesPath);      
-      saveGeneralSettings(DEFAULT_GENERAL_SETTINGS);
-      setGeneralSettings(DEFAULT_GENERAL_SETTINGS);
+      const defaults = buildDefaultGeneralSettings();
+      saveGeneralSettings(defaults);
+      setGeneralSettings(defaults);
     } catch (err) {
       window.alert("Failed to reset episode directory: " + String(err));
     }
@@ -165,7 +166,6 @@ function App() {
     exportDir,
     setExportDir,
     episodesPath: generalSettings.episodesPath,
-    exportFormat: generalSettings.exportFormat,
     onRPCUpdate: updateRPC,
     generalSettings,
   });

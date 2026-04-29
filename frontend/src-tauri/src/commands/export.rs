@@ -21,6 +21,8 @@ pub async fn export_clips(
     clips: Vec<String>,
     save_path: String,
     merge_enabled: bool,
+    codec_name: Option<String>,
+    codec_profile: Option<String>,
 ) -> Result<Vec<String>, String> {
     abort_state.abort_requested.store(false, Ordering::SeqCst);
     if let Ok(mut lock) = abort_state.pid.lock() {
@@ -53,12 +55,88 @@ pub async fn export_clips(
         return Ok(Vec::new());
     }
 
+    #[derive(Clone, Debug)]
+    struct CodecConfig {
+        codec: String,
+        profile: String,
+    }
+
+    fn resolve_codec_config(
+        codec_name: Option<String>,
+        codec_profile: Option<String>,
+    ) -> CodecConfig {
+        let codec = codec_name
+            .unwrap_or_else(|| "h264".to_string())
+            .trim()
+            .to_ascii_lowercase();
+        let profile = codec_profile
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+
+        match codec.as_str() {
+            "h265" => CodecConfig {
+                codec,
+                profile: if profile == "main10" {
+                    "main10".to_string()
+                } else {
+                    "main".to_string()
+                },
+            },
+            "dnxhd_dnxhr" => {
+                let allowed = [
+                    "dnxhd_36",
+                    "dnxhd_145",
+                    "dnxhd_220",
+                    "dnxhr_lb",
+                    "dnxhr_sq",
+                    "dnxhr_hq",
+                    "dnxhr_hqx",
+                    "dnxhr_444",
+                ];
+                CodecConfig {
+                    codec,
+                    profile: if allowed.contains(&profile.as_str()) {
+                        profile
+                    } else {
+                        "dnxhr_hq".to_string()
+                    },
+                }
+            }
+            "prores" => {
+                let allowed = ["proxy", "lt", "422", "422hq", "4444", "4444xq"];
+                CodecConfig {
+                    codec,
+                    profile: if allowed.contains(&profile.as_str()) {
+                        profile
+                    } else {
+                        "422hq".to_string()
+                    },
+                }
+            }
+            _ => {
+                let normalized_profile = match profile.as_str() {
+                    "baseline" | "main" | "high" => profile,
+                    _ => "high".to_string(),
+                };
+                CodecConfig {
+                    codec: "h264".to_string(),
+                    profile: normalized_profile,
+                }
+            }
+        }
+    }
+
+    let codec_config = resolve_codec_config(codec_name, codec_profile);
+
     console_log(
         "EXPORT|start",
         &format!(
-            "merge_enabled={} clips={} dest={}",
+            "merge_enabled={} clips={} codec={}/{} dest={}",
             merge_enabled,
             clips.len(),
+            codec_config.codec,
+            codec_config.profile,
             file_name_only(&save_path)
         ),
     );
@@ -393,9 +471,137 @@ pub async fn export_clips(
         Ok(())
     }
 
-    fn ffmpeg_reencode_ae_args(input: &str, output: &str) -> Vec<String> {
-        // Timestamp normalization + re-encode to broadly compatible H.264/AAC.
-        // This avoids common NLE import issues (black frames, odd timebases, missing PTS).
+    fn add_video_codec_args(args: &mut Vec<String>, codec_config: &CodecConfig) {
+        match codec_config.codec.as_str() {
+            "h265" => {
+                args.extend([
+                    "-c:v".to_string(),
+                    "libx265".to_string(),
+                    "-preset".to_string(),
+                    "medium".to_string(),
+                    "-crf".to_string(),
+                    "20".to_string(),
+                ]);
+                if codec_config.profile == "main10" {
+                    args.extend([
+                        "-pix_fmt".to_string(),
+                        "yuv420p10le".to_string(),
+                        "-profile:v".to_string(),
+                        "main10".to_string(),
+                    ]);
+                } else {
+                    args.extend([
+                        "-pix_fmt".to_string(),
+                        "yuv420p".to_string(),
+                        "-profile:v".to_string(),
+                        "main".to_string(),
+                    ]);
+                }
+            }
+            "dnxhd_dnxhr" => {
+                args.extend(["-c:v".to_string(), "dnxhd".to_string()]);
+
+                match codec_config.profile.as_str() {
+                    "dnxhd_36" => args.extend(["-b:v".to_string(), "36M".to_string()]),
+                    "dnxhd_145" => args.extend(["-b:v".to_string(), "145M".to_string()]),
+                    "dnxhd_220" => args.extend(["-b:v".to_string(), "220M".to_string()]),
+                    "dnxhr_lb" | "dnxhr_sq" | "dnxhr_hq" | "dnxhr_hqx" | "dnxhr_444" => {
+                        args.extend(["-profile:v".to_string(), codec_config.profile.clone()]);
+                    }
+                    _ => args.extend(["-profile:v".to_string(), "dnxhr_hq".to_string()]),
+                }
+
+                let pix_fmt = match codec_config.profile.as_str() {
+                    "dnxhr_hqx" | "dnxhr_444" => "yuv422p10le",
+                    _ => "yuv422p",
+                };
+                args.extend(["-pix_fmt".to_string(), pix_fmt.to_string()]);
+            }
+            "prores" => {
+                let profile_number = match codec_config.profile.as_str() {
+                    "proxy" => "0",
+                    "lt" => "1",
+                    "422" => "2",
+                    "422hq" => "3",
+                    "4444" => "4",
+                    "4444xq" => "5",
+                    _ => "3",
+                };
+
+                let pix_fmt = match codec_config.profile.as_str() {
+                    "4444" | "4444xq" => "yuv444p10le",
+                    _ => "yuv422p10le",
+                };
+
+                args.extend([
+                    "-c:v".to_string(),
+                    "prores_ks".to_string(),
+                    "-profile:v".to_string(),
+                    profile_number.to_string(),
+                    "-pix_fmt".to_string(),
+                    pix_fmt.to_string(),
+                ]);
+            }
+            _ => {
+                let h264_profile = match codec_config.profile.as_str() {
+                    "baseline" | "main" | "high" => codec_config.profile.as_str(),
+                    _ => "high",
+                };
+
+                args.extend([
+                    "-c:v".to_string(),
+                    "libx264".to_string(),
+                    "-pix_fmt".to_string(),
+                    "yuv420p".to_string(),
+                    "-profile:v".to_string(),
+                    h264_profile.to_string(),
+                    "-level".to_string(),
+                    "4.1".to_string(),
+                    "-preset".to_string(),
+                    "medium".to_string(),
+                    "-crf".to_string(),
+                    "18".to_string(),
+                ]);
+            }
+        }
+    }
+
+    fn add_audio_codec_args(args: &mut Vec<String>, codec_config: &CodecConfig) {
+        if codec_config.codec == "dnxhd_dnxhr" || codec_config.codec == "prores" {
+            args.extend([
+                "-c:a".to_string(),
+                "pcm_s16le".to_string(),
+                "-ar".to_string(),
+                "48000".to_string(),
+                "-ac".to_string(),
+                "2".to_string(),
+            ]);
+        } else {
+            args.extend([
+                "-c:a".to_string(),
+                "aac".to_string(),
+                "-b:a".to_string(),
+                "192k".to_string(),
+                "-ar".to_string(),
+                "48000".to_string(),
+                "-ac".to_string(),
+                "2".to_string(),
+            ]);
+        }
+    }
+
+    fn should_use_faststart(codec_config: &CodecConfig, output: &str) -> bool {
+        let ext = Path::new(output)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        (ext == "mp4" || ext == "mov")
+            && (codec_config.codec == "h264" || codec_config.codec == "h265")
+    }
+
+    fn ffmpeg_reencode_args(input: &str, output: &str, codec_config: &CodecConfig) -> Vec<String> {
+        // Timestamp normalization + re-encode using user-selected codec profile.
         let mut args = vec![
             "-y".to_string(),
             "-i".to_string(),
@@ -404,37 +610,11 @@ pub async fn export_clips(
             "+genpts".to_string(),
             "-avoid_negative_ts".to_string(),
             "make_zero".to_string(),
-            // Video
-            "-c:v".to_string(),
-            "libx264".to_string(),
-            "-pix_fmt".to_string(),
-            "yuv420p".to_string(),
-            "-profile:v".to_string(),
-            "high".to_string(),
-            "-level".to_string(),
-            "4.1".to_string(),
-            "-preset".to_string(),
-            "medium".to_string(),
-            "-crf".to_string(),
-            "18".to_string(),
-            // Audio
-            "-c:a".to_string(),
-            "aac".to_string(),
-            "-b:a".to_string(),
-            "192k".to_string(),
-            "-ar".to_string(),
-            "48000".to_string(),
-            "-ac".to_string(),
-            "2".to_string(),
         ];
 
-        // MP4/MOV faststart
-        let ext = Path::new(output)
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-        if ext == "mp4" || ext == "mov" {
+        add_video_codec_args(&mut args, codec_config);
+
+        if should_use_faststart(codec_config, output) {
             args.push("-movflags".to_string());
             args.push("+faststart".to_string());
         }
@@ -442,6 +622,8 @@ pub async fn export_clips(
         // Avoid rare muxing queue overflows on tricky inputs.
         args.push("-max_muxing_queue_size".to_string());
         args.push("1024".to_string());
+
+        add_audio_codec_args(&mut args, codec_config);
         args.push(output.to_string());
 
         args
@@ -506,48 +688,22 @@ pub async fn export_clips(
             "0".into(),
             "-i".into(),
             filelist_path.clone(),
-            // Video/audio re-encode for compatibility
             "-fflags".into(),
             "+genpts".into(),
             "-avoid_negative_ts".into(),
             "make_zero".into(),
-            "-c:v".into(),
-            "libx264".into(),
-            "-pix_fmt".into(),
-            "yuv420p".into(),
-            "-profile:v".into(),
-            "high".into(),
-            "-level".into(),
-            "4.1".into(),
-            "-preset".into(),
-            "veryfast".into(),
-            "-crf".into(),
-            "18".into(),
         ];
 
-        let ext = save_path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-        if ext == "mp4" || ext == "mov" {
+        add_video_codec_args(&mut args, &codec_config);
+
+        if should_use_faststart(&codec_config, &out_str) {
             args.push("-movflags".into());
             args.push("+faststart".into());
         }
 
-        args.extend([
-            "-max_muxing_queue_size".into(),
-            "1024".into(),
-            "-c:a".into(),
-            "aac".into(),
-            "-b:a".into(),
-            "192k".into(),
-            "-ar".into(),
-            "48000".into(),
-            "-ac".into(),
-            "2".into(),
-            out_str.clone(),
-        ]);
+        args.extend(["-max_muxing_queue_size".into(), "1024".into()]);
+        add_audio_codec_args(&mut args, &codec_config);
+        args.push(out_str.clone());
 
         let app_for_ffmpeg = app.clone();
         let ffmpeg_clone = ffmpeg.clone();
@@ -605,6 +761,7 @@ pub async fn export_clips(
 
         // Probe durations once to produce smooth overall progress.
         emit_export_progress(&app, 5, "Probing clip info...", export_start_time);
+        let allow_stream_copy = codec_config.codec == "h264" && codec_config.profile == "high";
         let mut per_ms: Vec<Option<u64>> = Vec::with_capacity(clips.len());
         let mut total_ms: Option<u64> = Some(0);
         // Pre-cache codec info alongside durations to avoid redundant ffprobe calls per clip.
@@ -623,9 +780,13 @@ pub async fn export_clips(
             } else {
                 total_ms = None;
             }
-            let safe = is_ae_copy_safe(ffprobe.clone(), c.clone())
-                .await
-                .unwrap_or(false);
+            let safe = if allow_stream_copy {
+                is_ae_copy_safe(ffprobe.clone(), c.clone())
+                    .await
+                    .unwrap_or(false)
+            } else {
+                false
+            };
             per_copy_safe.push(safe);
         }
 
@@ -668,7 +829,7 @@ pub async fn export_clips(
             emit_export_progress(&app, 10, &msg, export_start_time);
 
             // Use pre-cached codec info instead of re-probing each clip.
-            let copy_ok = per_copy_safe.get(i).copied().unwrap_or(false);
+            let copy_ok = allow_stream_copy && per_copy_safe.get(i).copied().unwrap_or(false);
             let clip_total = per_ms.get(i).copied().flatten();
 
             let (mode_msg, args) = if copy_ok {
@@ -692,7 +853,7 @@ pub async fn export_clips(
             } else {
                 (
                     format!("{msg} (re-encode)"),
-                    ffmpeg_reencode_ae_args(input_str, output_str),
+                    ffmpeg_reencode_args(input_str, output_str, &codec_config),
                 )
             };
 
@@ -761,7 +922,7 @@ pub async fn export_clips(
                     let grand_total = total_ms;
                     let done_before = done_ms;
                     let run_msg = format!("{msg} (re-encode)");
-                    let run_args = ffmpeg_reencode_ae_args(input_str, output_str);
+                    let run_args = ffmpeg_reencode_args(input_str, output_str, &codec_config);
                     let start_time = export_start_time;
                     let abort_requested_for_run = abort_requested.clone();
                     let active_pid_for_run = active_pid.clone();

@@ -7,6 +7,10 @@
   z-index: 100;
 }
 
+.custom-dropdown.open {
+  z-index: 1200;
+}
+
 .dropdown-trigger {
   display: flex;
   align-items: center;
@@ -39,6 +43,9 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .dropdown-icon {
@@ -55,7 +62,7 @@
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background: rgba(20, 20, 20, 0.95);
@@ -65,7 +72,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: dropdown-fade-in 0.2s ease-out;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 @keyframes dropdown-fade-in {
@@ -97,10 +104,78 @@
 .dropdown-item.active {
   background: var(--accent);
   color: white;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .custom-dropdown.disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.settings-profile-dropdown .dropdown-item,
+.preview-profile-dropdown .dropdown-item {
+  text-transform: none;
+  padding: 5px 10px;
+}
+
+.settings-profile-dropdown .dropdown-item:hover,
+.preview-profile-dropdown .dropdown-item:hover {
+  padding-left: 10px;
+}
+
+.profile-dropdown-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.profile-dropdown-icon {
+  flex: 0 0 auto;
+}
+
+.profile-dropdown-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-dropdown-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.15;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-dropdown-meta {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.1;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-profile-dropdown .dropdown-item.active .profile-dropdown-title,
+.preview-profile-dropdown .dropdown-item.active .profile-dropdown-title {
+  font-weight: 600;
+}
+
+.settings-profile-dropdown .dropdown-item.active .profile-dropdown-meta,
+.preview-profile-dropdown .dropdown-item.active .profile-dropdown-meta {
+  font-weight: 400;
+}
+
+.settings-profile-dropdown .dropdown-value,
+.preview-profile-dropdown .dropdown-value {
+  text-transform: none;
+  letter-spacing: 0.5px;
 }

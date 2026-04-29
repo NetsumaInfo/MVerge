@@ -4,7 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { ClipItem, EpisodeEntry } from "../types/domain"
 import { fileNameFromPath, truncateFileName, detectScenes } from "../utils/episodeUtils";
 export type EditorTarget = "premiere" | "after_effects" | "davinci_resolve";
-import { GeneralSettings } from "../settings/generalSettings";
+import { GeneralSettings, getActiveExportProfile, isVideoWorkflow } from "../settings/generalSettings";
 
 type ImportExportProps = {
   abortedRef: React.RefObject<boolean>;
@@ -25,7 +25,6 @@ type ImportExportProps = {
   setProgress: React.Dispatch<React.SetStateAction<number>>;
   setProgressMsg: React.Dispatch<React.SetStateAction<string>>;
   episodesPath: string | null;
-  exportFormat: "mp4" | "mkv" | "mov" | "avi" | "xml";
   onRPCUpdate?: (data: any) => void;
   generalSettings: GeneralSettings;
 };
@@ -38,6 +37,11 @@ type TimelineXmlClip = {
   sceneIndex?: number;
   startSec?: number;
   endSec?: number | null;
+};
+
+type TimelineClipBuild = {
+  timelineClips: TimelineXmlClip[];
+  sequenceName: string;
 };
 
 export default function useImportExport(props: ImportExportProps) {
@@ -95,6 +99,27 @@ export default function useImportExport(props: ImportExportProps) {
       .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
       .replace(/\s+/g, " ")
       .slice(0, 120) || "timeline";
+
+  const buildTimelineClips = (selected: ClipItem[]): TimelineClipBuild => {
+    const originalName = selected[0]?.originalName || "episode";
+    const sequenceName = sanitizeFileName(originalName);
+    const fallbackOriginalPath =
+      selected.find((clip) => !!clip.originalPath)?.originalPath ??
+      props.importedVideoPath ??
+      undefined;
+
+    const timelineClips: TimelineXmlClip[] = selected.map((clip) => ({
+      id: clip.id,
+      src: clip.src,
+      originalName: clip.originalName,
+      originalPath: clip.originalPath ?? fallbackOriginalPath,
+      sceneIndex: clip.sceneIndex,
+      startSec: clip.startSec,
+      endSec: clip.endSec,
+    }));
+
+    return { timelineClips, sequenceName };
+  };
 
   const cleanErrorMessage = (rawError: unknown): string =>
     String(rawError ?? "Unknown error")
@@ -304,14 +329,24 @@ export default function useImportExport(props: ImportExportProps) {
     selectedClips: Set<string>,
     mergeEnabled: boolean,
     mergeFileName?: string,
-    editorTarget: EditorTarget = "premiere"
+    _editorTarget: EditorTarget = "premiere"
   ) => {
     if (selectedClips.size === 0) return;
 
     const selected = props.clips.filter((c: ClipItem) => selectedClips.has(c.id));
     if (selected.length === 0) return;
-    const dir = await ensureExportDir();
-    if (!dir) return;
+    const activeExportProfile = getActiveExportProfile(props.generalSettings);
+    const profileEditorTarget = activeExportProfile.editorTarget as EditorTarget;
+
+    if (activeExportProfile.workflow === "original_cut_to_editor") {
+      await handleExportOriginal(selectedClips, profileEditorTarget);
+      return;
+    }
+
+    const requiresDirectory =
+      activeExportProfile.workflow === "xml_timeline" || isVideoWorkflow(activeExportProfile.workflow);
+    const dir = requiresDirectory ? await ensureExportDir() : null;
+    if (requiresDirectory && !dir) return;
     let overlayHoldMs = 0;
 
     try {
@@ -319,16 +354,23 @@ export default function useImportExport(props: ImportExportProps) {
       setShowLoaderCancel(true);
       setLoaderCancelLabel("Cancel");
 
-      const clipArray = selected.map((c: ClipItem) => c.src);
-      const format = props.exportFormat || "mp4";
-      if (format === "xml") {
+      if (activeExportProfile.workflow === "xml_timeline") {
+        const { timelineClips, sequenceName } = buildTimelineClips(selected);
+        const xmlPath = `${dir}\\${sequenceName}.xml`;
+        props.setProgress(35);
+        props.setProgressMsg("Generating XML timeline...");
+        await invoke("export_timeline_xml", {
+          clips: timelineClips,
+          savePath: xmlPath,
+          sequenceName,
+        });
         props.setProgress(100);
-        props.setProgressMsg(
-          "Export canceled. XML is not supported in this export flow. Use MP4, MKV, MOV, or AVI."
-        );
-        overlayHoldMs = 1800;
+        props.setProgressMsg(`XML export complete. Saved: ${sequenceName}.xml`);
         return;
       }
+
+      const clipArray = selected.map((c: ClipItem) => c.src);
+      const format = activeExportProfile.format;
       let exportedPaths: string[] = [];
 
       const rpcButtons: { label: string; url: string }[] = [];
@@ -354,6 +396,8 @@ export default function useImportExport(props: ImportExportProps) {
           clips: clipArray,
           savePath: savePath,
           mergeEnabled: mergeEnabled,
+          codecName: activeExportProfile.codec,
+          codecProfile: activeExportProfile.codecProfile,
         });
       } else {
         const firstClipPath = selected[0]?.src || "";
@@ -366,41 +410,48 @@ export default function useImportExport(props: ImportExportProps) {
           clips: clipArray,
           savePath: savePath,
           mergeEnabled: false,
+          codecName: activeExportProfile.codec,
+          codecProfile: activeExportProfile.codecProfile,
         });
       }
 
       if (exportedPaths.length > 0) {
-        try {
-          props.setProgress(99);
-          props.setProgressMsg(
-            `Export finished. Preparing ${editorLabel(editorTarget)} auto-import...`
-          );
-          setShowLoaderCancel(true);
-          setLoaderCancelLabel("Cancel");
+        if (activeExportProfile.workflow === "video_and_editor") {
+          try {
+            props.setProgress(99);
+            props.setProgressMsg(`Export finished. Sending files to ${editorLabel(profileEditorTarget)}...`);
+            setShowLoaderCancel(true);
+            setLoaderCancelLabel("Cancel");
 
-          const result = await invoke<string>("import_media_to_editor", {
-            editorTarget,
-            mediaPaths: exportedPaths,
-          });
+            const result = await invoke<string>("import_media_to_editor", {
+              editorTarget: profileEditorTarget,
+              mediaPaths: exportedPaths,
+            });
 
-          props.setProgress(100);
-          props.setProgressMsg(
-            result?.trim() || `${editorLabel(editorTarget)} import complete.`
-          );
-          console.log(result);
-        } catch (err) {
-          console.warn("Auto-import failed:", err);
-          props.setProgress(100);
-          const failureMsg = formatAutoImportFailureMessage(editorTarget, err);
-          props.setProgressMsg(failureMsg);
-          if (/not detected/i.test(failureMsg)) {
-            // Keep the integrated loader message visible briefly so the user can read it.
-            overlayHoldMs = 1800;
+            props.setProgress(100);
+            props.setProgressMsg(
+              result?.trim() || `${editorLabel(profileEditorTarget)} import complete.`
+            );
+          } catch (err) {
+            console.warn("Auto-import failed:", err);
+            props.setProgress(100);
+            const failureMsg = formatAutoImportFailureMessage(profileEditorTarget, err);
+            props.setProgressMsg(failureMsg);
+            if (/not detected/i.test(failureMsg)) {
+              overlayHoldMs = 1800;
+            }
+          } finally {
+            setShowLoaderCancel(false);
+            setLoaderCancelLabel("Cancel");
           }
-        } finally {
-          setShowLoaderCancel(false);
-          setLoaderCancelLabel("Cancel");
+        } else {
+          props.setProgress(100);
+          const fileLabel = exportedPaths.length > 1 ? "files" : "file";
+          props.setProgressMsg(`Export complete. ${exportedPaths.length} ${fileLabel} saved.`);
         }
+      } else {
+        props.setProgress(100);
+        props.setProgressMsg("Export complete.");
       }
 
       props.onRPCUpdate?.({
@@ -479,22 +530,7 @@ export default function useImportExport(props: ImportExportProps) {
         buttons: props.generalSettings.rpcShowButtons ? rpcButtons : undefined,
       });
 
-      const originalName = selected[0]?.originalName || "episode";
-      const cutBaseName = sanitizeFileName(originalName);
-      const fallbackOriginalPath =
-        selected.find((clip) => !!clip.originalPath)?.originalPath ??
-        props.importedVideoPath ??
-        undefined;
-
-      const timelineClips: TimelineXmlClip[] = selected.map((clip) => ({
-        id: clip.id,
-        src: clip.src,
-        originalName: clip.originalName,
-        originalPath: clip.originalPath ?? fallbackOriginalPath,
-        sceneIndex: clip.sceneIndex,
-        startSec: clip.startSec,
-        endSec: clip.endSec,
-      }));
+      const { timelineClips, sequenceName: cutBaseName } = buildTimelineClips(selected);
 
       try {
         setShowLoaderCancel(true);
@@ -584,7 +620,8 @@ export default function useImportExport(props: ImportExportProps) {
 
   const handleDownloadSingleClip = async (clip: ClipItem) => {
     try {
-      const format = props.exportFormat === "xml" ? "mp4" : (props.exportFormat || "mp4");
+      const activeExportProfile = getActiveExportProfile(props.generalSettings);
+      const format = activeExportProfile.format === "xml" ? "mp4" : activeExportProfile.format;
       const fileName = clip.originalName || fileNameFromPath(clip.src);
       const defaultPath = `${fileName}.${format}`;
 
@@ -600,6 +637,8 @@ export default function useImportExport(props: ImportExportProps) {
         clips: [clip.src],
         savePath: savePath,
         mergeEnabled: false,
+        codecName: activeExportProfile.codec,
+        codecProfile: activeExportProfile.codecProfile,
       });
       console.log("Single clip download complete");
     } catch (err) {

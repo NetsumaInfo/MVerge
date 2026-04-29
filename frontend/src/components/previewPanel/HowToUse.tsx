@@ -7,19 +7,19 @@ const STEPS: Record<Platform, React.ReactNode[]> = {
   windows: [
     <>Select clips with <b>Ctrl + Click</b> or <b>Shift + Click</b></>,
     <>Double click to <b>Focus</b> a clip</>,
-    <>Toggle <b>Merge clips</b> to export as one file</>,
+    <>Choose an <b>Export Profile</b> before exporting</>,
     <>Click <b>Export Now</b> to start the process</>,
   ],
   mac: [
     <>Select clips with <b>Cmd + Click</b> or <b>Shift + Click</b></>,
     <>Double click to <b>Focus</b> a clip</>,
-    <>Toggle <b>Merge clips</b> to export as one file</>,
+    <>Choose an <b>Export Profile</b> before exporting</>,
     <>Click <b>Export Now</b> to start the process</>,
   ],
   linux: [
     <>Select clips with <b>Ctrl + Click</b> or <b>Shift + Click</b></>,
     <>Double click to <b>Focus</b> a clip</>,
-    <>Toggle <b>Merge clips</b> to export as one file</>,
+    <>Choose an <b>Export Profile</b> before exporting</>,
     <>Click <b>Export Now</b> to start the process</>,
   ],
 };

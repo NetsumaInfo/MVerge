@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { FaChevronDown } from "react-icons/fa";
 import "../../styles/common/dropdown.css";
 
-interface DropdownOption<T> {
+export interface DropdownOption<T> {
   value: T;
   label: string;
 }
@@ -13,6 +13,8 @@ interface DropdownProps<T> {
   onChange: (value: T) => void;
   className?: string;
   disabled?: boolean;
+  renderValue?: (selected: DropdownOption<T> | undefined) => ReactNode;
+  renderOption?: (option: DropdownOption<T>, isActive: boolean) => ReactNode;
 }
 
 export default function Dropdown<T extends string | number>({
@@ -21,6 +23,8 @@ export default function Dropdown<T extends string | number>({
   onChange,
   className = "",
   disabled = false,
+  renderValue,
+  renderOption,
 }: DropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +66,9 @@ export default function Dropdown<T extends string | number>({
       }`}
     >
       <div className="dropdown-trigger" onClick={toggleDropdown}>
-        <span className="dropdown-value">{selectedOption?.label || value}</span>
+        <span className="dropdown-value">
+          {renderValue ? renderValue(selectedOption) : (selectedOption?.label || value)}
+        </span>
         <FaChevronDown className={`dropdown-icon ${isOpen ? "rotate" : ""}`} />
       </div>
 
@@ -76,7 +82,9 @@ export default function Dropdown<T extends string | number>({
               }`}
               onClick={() => handleSelect(option.value)}
             >
-              {option.label}
+              {renderOption
+                ? renderOption(option, option.value === value)
+                : option.label}
             </div>
           ))}
         </div>
