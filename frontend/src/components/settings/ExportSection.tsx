@@ -83,10 +83,11 @@ export default function ExportSection() {
     () =>
       exportProfiles.map((profile) => {
         const Icon = PROFILE_ICON_COMPONENTS[profile.icon];
+        const summary = getExportProfileSummary(profile).replace(/ • /g, " / ");
         return {
           value: profile.id,
           label: profile.name.trim() || "Untitled Profile",
-          description: `${getExportProfileSummary(profile)} • ${profile.mergeEnabled ? "MERGE" : "CLIPS"}`,
+          description: summary,
           icon: <Icon />,
         };
       }),

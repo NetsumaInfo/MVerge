@@ -257,6 +257,35 @@
     align-items: center;
 }
 
+.export-profile-selector-dropdown .dropdown-value.rich .dropdown-item-content {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-areas:
+        "icon label"
+        "icon desc";
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+}
+
+.export-profile-selector-dropdown .dropdown-value.rich .dropdown-item-main {
+    display: contents;
+}
+
+.export-profile-selector-dropdown .dropdown-value.rich .dropdown-item-icon {
+    grid-area: icon;
+    align-self: center;
+    justify-self: center;
+}
+
+.export-profile-selector-dropdown .dropdown-value.rich .dropdown-item-label {
+    grid-area: label;
+}
+
+.export-profile-selector-dropdown .dropdown-value.rich .dropdown-item-description {
+    grid-area: desc;
+}
+
 .export-profile-selector-dropdown .dropdown-item {
     padding-top: 10px;
     padding-bottom: 10px;
@@ -273,6 +302,7 @@
 
 .export-profile-selector-dropdown .dropdown-item-label {
     font-size: 0.95rem;
+    text-transform: none;
     letter-spacing: 0.35px;
 }
 
