@@ -139,6 +139,8 @@
     flex-direction: column;
     gap: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 20;
 }
 
 .export-header {
@@ -259,49 +261,68 @@
 }
 
 .export-profile-select .dropdown-item-content {
-    gap: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .export-profile-select .dropdown-item-label {
-    font-size: 0.92rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
 .export-profile-select .dropdown-item-description {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: rgba(255, 255, 255, 0.58);
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1.2;
 }
 
 .export-profile-select .dropdown-item-icon {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     align-self: center;
-    padding: 0;
-    border-radius: 10px;
 }
 
-.export-profile-select .dropdown-item-icon svg {
-    width: 16px;
-    height: 16px;
-    display: block;
+.export-profile-select .dropdown-item {
+    padding: 7px 10px;
 }
 
 .export-profile-select .dropdown-item.active,
 .export-format-select .dropdown-item.active {
-    color: black !important;
+    color: white !important;
+}
+
+.export-profile-select .dropdown-item.active .dropdown-item-icon {
+    background: rgba(var(--accent-rgb), 0.22) !important;
+    border-color: rgba(var(--accent-rgb), 0.42) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .export-profile-select .dropdown-menu {
-    max-height: min(56vh, 360px);
+    max-height: 168px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--accent-rgb), 0.55) rgba(255, 255, 255, 0.06);
+}
+
+.export-profile-select .dropdown-menu::-webkit-scrollbar {
+    width: 8px;
+}
+
+.export-profile-select .dropdown-menu::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+}
+
+.export-profile-select .dropdown-menu::-webkit-scrollbar-thumb {
+    background: rgba(var(--accent-rgb), 0.55);
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.export-profile-select .dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--accent-rgb), 0.75);
 }
 
 .export-path-section {
@@ -511,6 +532,8 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 10;
 }
 
 .info-panel.expanded {
