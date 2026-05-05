@@ -10,9 +10,7 @@ export type ExportCodecFamily =
   | "h265"
   | "prores"
   | "dnxhr"
-  | "uncompressed"
-  | "av1"
-  | "cineform";
+  | "uncompressed";
 
 export type ExportCodec =
   | "h264_main"
@@ -44,7 +42,17 @@ export type ExportCodec =
   | "h265"
   | "av1";
 
-export type ExportAudioMode = "copy" | "aac" | "pcm16" | "none";
+export type ExportAudioMode =
+  | "copy"
+  | "aac"
+  | "aac_320"
+  | "pcm16"
+  | "pcm24"
+  | "flac"
+  | "alac"
+  | "opus"
+  | "mp3"
+  | "none";
 export type ExportContainer = "mp4" | "mkv" | "mov" | "avi" | "mxf";
 export type ExportHardwareMode = "auto" | "gpu" | "cpu";
 export type ExportEditorTarget =
@@ -91,15 +99,17 @@ export type NvidiaDetectionResult = {
   profile: NvidiaEncoderProfile;
 };
 
+export const SAFE_DEFAULT_PARALLEL_EXPORTS = 8;
+
 export const NVIDIA_ENCODER_SUPPORT_MATRIX_URL =
   "https://developer.nvidia.com/video-encode-decode-support-matrix";
 
 export const EXPORT_WORKFLOW_OPTIONS: { value: ExportWorkflow; label: string }[] = [
-  { value: "video_encode", label: "Export video (encoding)" },
-  { value: "video_remux", label: "Export remux / copy video stream" },
-  { value: "editor_encode", label: "Export to editor with re-encode" },
-  { value: "editor_remux", label: "Export to editor with remux" },
-  { value: "editor_original_xml", label: "Export to editor with original source (XML)" },
+  { value: "video_encode", label: "Export video (re-encode)" },
+  { value: "video_remux", label: "Export video (stream copy / remux)" },
+  { value: "editor_encode", label: "Export + editor auto-import (re-encode)" },
+  { value: "editor_remux", label: "Export + editor auto-import (remux)" },
+  { value: "editor_original_xml", label: "Export editor XML from original source" },
 ];
 
 export const EXPORT_CODEC_OPTIONS: { value: ExportCodec; label: string }[] = [
@@ -125,14 +135,18 @@ export const EXPORT_CODEC_OPTIONS: { value: ExportCodec; label: string }[] = [
   { value: "uncompressed_rgb10", label: "Uncompressed RGB 10-bit" },
   { value: "uncompressed_rgba8", label: "Uncompressed RGBA 8-bit" },
   { value: "uncompressed_rgba16", label: "Uncompressed RGBA 16-bit" },
-  { value: "av1_main", label: "AV1 - Main" },
-  { value: "cineform", label: "GoPro CineForm" },
 ];
 
 export const EXPORT_AUDIO_OPTIONS: { value: ExportAudioMode; label: string }[] = [
   { value: "copy", label: "Keep audio copy" },
   { value: "aac", label: "AAC 192 kbps" },
+  { value: "aac_320", label: "AAC 320 kbps" },
   { value: "pcm16", label: "PCM 16-bit" },
+  { value: "pcm24", label: "PCM 24-bit" },
+  { value: "flac", label: "FLAC lossless" },
+  { value: "alac", label: "ALAC lossless" },
+  { value: "opus", label: "Opus 160 kbps" },
+  { value: "mp3", label: "MP3 320 kbps" },
   { value: "none", label: "No audio" },
 ];
 
@@ -140,8 +154,6 @@ export const EXPORT_CONTAINER_OPTIONS: { value: ExportContainer; label: string }
   { value: "mp4", label: "MP4" },
   { value: "mkv", label: "MKV" },
   { value: "mov", label: "MOV" },
-  { value: "avi", label: "AVI" },
-  { value: "mxf", label: "MXF" },
 ];
 
 export const EXPORT_HARDWARE_OPTIONS: { value: ExportHardwareMode; label: string }[] = [
@@ -203,7 +215,7 @@ export const NVIDIA_ENCODER_PROFILE_OPTIONS: {
   },
   {
     value: "ampere",
-    label: "GeForce RTX 20/30 / Ampere",
+    label: "GeForce RTX 30 / Ampere",
     maxParallelExports: 8,
     supportedCodecs: ["h264_main", "h264_high", "h265_main", "h265_main10"],
   },
@@ -357,7 +369,13 @@ const CODEC_LABELS: Record<ExportCodec, string> = {
 const AUDIO_MODE_LABELS: Record<ExportAudioMode, string> = {
   copy: "Audio copy",
   aac: "AAC",
+  aac_320: "AAC 320k",
   pcm16: "PCM 16-bit",
+  pcm24: "PCM 24-bit",
+  flac: "FLAC",
+  alac: "ALAC",
+  opus: "Opus",
+  mp3: "MP3",
   none: "No audio",
 };
 
@@ -375,8 +393,6 @@ const CODEC_FAMILY_LABELS: Record<ExportCodecFamily, string> = {
   prores: "ProRes",
   dnxhr: "DNxHR",
   uncompressed: "Uncompressed",
-  av1: "AV1",
-  cineform: "CineForm",
 };
 
 const CODEC_FAMILY_TO_CODECS: Record<ExportCodecFamily, ExportCodec[]> = {
@@ -385,14 +401,21 @@ const CODEC_FAMILY_TO_CODECS: Record<ExportCodecFamily, ExportCodec[]> = {
   prores: ["prores_422_lt", "prores_422", "prores_422_hq", "prores_4444", "prores_4444_xq"],
   dnxhr: ["dnxhr_lb", "dnxhr_sq", "dnxhr_hq", "dnxhr_hqx", "dnxhr_444"],
   uncompressed: ["uncompressed_rgb8", "uncompressed_rgb10", "uncompressed_rgba8", "uncompressed_rgba16"],
-  av1: ["av1_main"],
-  cineform: ["cineform"],
 };
 
 const LEGACY_CODEC_MAP: Record<string, ExportCodec> = {
   h264: "h264_high",
   h265: "h265_main",
   av1: "av1_main",
+};
+
+const LEGACY_AUDIO_MODE_MAP: Record<string, ExportAudioMode> = {
+  aac192: "aac",
+  aac_192: "aac",
+  pcm: "pcm16",
+  pcm_s16: "pcm16",
+  opus_160: "opus",
+  mp3_320: "mp3",
 };
 
 export const EXPORT_CODEC_FAMILY_OPTIONS: { value: ExportCodecFamily; label: string }[] = (
@@ -410,6 +433,14 @@ export function coerceExportCodec(codec: string | undefined | null): ExportCodec
   return LEGACY_CODEC_MAP[codec] ?? "h264_high";
 }
 
+export function coerceExportAudioMode(audioMode: string | undefined | null): ExportAudioMode {
+  if (!audioMode) return "copy";
+  if ((EXPORT_AUDIO_OPTIONS as { value: string }[]).some((option) => option.value === audioMode)) {
+    return audioMode as ExportAudioMode;
+  }
+  return LEGACY_AUDIO_MODE_MAP[audioMode] ?? "copy";
+}
+
 export function getExportCodecLabel(codec: ExportCodec): string {
   return CODEC_LABELS[codec] ?? "Unknown codec";
 }
@@ -422,8 +453,7 @@ export function getCodecFamily(codec: ExportCodec): ExportCodecFamily {
   if (normalized.startsWith("prores_")) return "prores";
   if (normalized.startsWith("dnxhr_")) return "dnxhr";
   if (normalized.startsWith("uncompressed_")) return "uncompressed";
-  if (normalized === "av1_main") return "av1";
-  return "cineform";
+  return "h264";
 }
 
 export function getCodecOptionsForFamily(
@@ -431,6 +461,14 @@ export function getCodecOptionsForFamily(
 ): { value: ExportCodec; label: string }[] {
   const allowed = CODEC_FAMILY_TO_CODECS[family];
   return EXPORT_CODEC_OPTIONS.filter((option) => allowed.includes(option.value));
+}
+
+export function coerceExportContainer(container: string | undefined | null): ExportContainer {
+  if (!container) return "mp4";
+  if ((EXPORT_CONTAINER_OPTIONS as { value: string }[]).some((option) => option.value === container)) {
+    return container as ExportContainer;
+  }
+  return "mp4";
 }
 
 export function usesEncoding(workflow: ExportWorkflow): boolean {
@@ -473,21 +511,38 @@ export function inferNvidiaProfileFromGpuName(gpuName: string | null | undefined
   if (!normalized.includes("nvidia")) return "unsupported";
 
   if (normalized.includes("rtx 50") || normalized.includes("blackwell")) return "blackwell";
-  if (normalized.includes("rtx 40") || normalized.includes(" ada")) return "ada";
+  if (
+    normalized.includes("rtx 40") ||
+    normalized.includes(" ada") ||
+    normalized.includes(" l40") ||
+    normalized.includes(" l4")
+  ) {
+    return "ada";
+  }
   if (
     normalized.includes("rtx 30") ||
-    normalized.includes("rtx 20") ||
+    normalized.includes("rtx a2000") ||
+    normalized.includes("rtx a3000") ||
+    normalized.includes("rtx a4000") ||
+    normalized.includes("rtx a4500") ||
+    normalized.includes("rtx a5000") ||
+    normalized.includes("rtx a5500") ||
+    normalized.includes("rtx a6000") ||
     normalized.includes("a10") ||
     normalized.includes("a16") ||
     normalized.includes("a2") ||
+    normalized.includes("a30") ||
+    normalized.includes("a40") ||
     normalized.includes("ampere")
   ) {
     return "ampere";
   }
   if (
+    normalized.includes("rtx 20") ||
     normalized.includes("gtx 16") ||
     normalized.includes("titan rtx") ||
     normalized.includes("quadro rtx") ||
+    normalized.includes("t4") ||
     normalized.includes("turing")
   ) {
     return "turing";
@@ -533,6 +588,10 @@ export function getParallelExportLimit(profile: ExportProfile): number {
   if (!support.supportedCodecs.includes(codec)) return 1;
 
   return Math.max(1, support.maxParallelExports);
+}
+
+export function getSafeDefaultParallelExports(limit: number): number {
+  return Math.max(1, Math.min(limit, SAFE_DEFAULT_PARALLEL_EXPORTS));
 }
 
 export function getExportProfileSummary(profile: ExportProfile): string {
@@ -598,8 +657,8 @@ export function normalizeExportProfile(profile: ExportProfile): ExportProfile {
     hardwareMode,
     nvidiaEncoderProfile,
     name: typeof profile.name === "string" ? profile.name : "Export Profile",
-    audioMode: profile.audioMode || "copy",
-    container: profile.container || "mp4",
+    audioMode: coerceExportAudioMode(profile.audioMode),
+    container: coerceExportContainer(profile.container),
     mergeEnabled: profile.mergeEnabled ?? false,
     parallelExports: Number.isFinite(profile.parallelExports) ? profile.parallelExports : 1,
   };

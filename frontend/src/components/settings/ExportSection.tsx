@@ -31,6 +31,7 @@ import {
   isXmlTimelineWorkflow,
   getNvidiaEncoderProfile,
   getParallelExportLimit,
+  getSafeDefaultParallelExports,
   normalizeExportProfile,
   supportsAudioMode,
   supportsClipMerge,
@@ -162,10 +163,13 @@ export default function ExportSection() {
   const parallelExportOptions = useMemo(
     () =>
       Array.from({ length: parallelLimit }, (_, i) => {
-        const value = i + 1;
+        const value = parallelLimit - i;
         return {
           value,
-          label: `${value} Export${value > 1 ? "s" : ""}`,
+          label:
+            value === parallelLimit && parallelLimit > 1
+              ? `Maximum (${value} Exports)`
+              : `${value} Export${value > 1 ? "s" : ""}`,
         };
       }),
     [parallelLimit]
@@ -204,13 +208,28 @@ export default function ExportSection() {
       : "unsupported";
 
     if (activeProfile.nvidiaEncoderProfile !== resolvedProfile) {
+      const nextProfile = normalizeExportProfile({
+        ...activeProfile,
+        nvidiaEncoderProfile: resolvedProfile,
+      });
+      const nextLimit = getParallelExportLimit(nextProfile);
+      const shouldApplySafeDefault =
+        activeProfile.parallelExports <= 1 &&
+        activeProfile.nvidiaEncoderProfile === "unknown" &&
+        nextLimit > 1;
+
       updateExportProfile(activeProfile.id, {
         nvidiaEncoderProfile: resolvedProfile,
+        parallelExports: shouldApplySafeDefault
+          ? getSafeDefaultParallelExports(nextLimit)
+          : activeProfile.parallelExports,
       });
     }
   }, [
+    activeProfile,
     activeProfile.id,
     activeProfile.nvidiaEncoderProfile,
+    activeProfile.parallelExports,
     encodingWorkflow,
     gpuProbeComplete,
     nvidiaDetection.hasNvidiaGpu,
@@ -440,7 +459,7 @@ export default function ExportSection() {
       {showAudioSetting && (
         <ExportSetting
           label="Audio Codec"
-          description="Choose encoded audio, source audio copy, or no audio in exported video files."
+          description="Choose encoded audio, source audio copy, or no audio. Audio copy keeps original codec/channels/layout exactly."
           control={
             <Dropdown
               className="settings-wide-dropdown"
@@ -490,7 +509,7 @@ export default function ExportSection() {
             description={
               parallelLocked
                 ? "Enabled only when NVIDIA profile and codec support parallel NVENC sessions."
-                : `Detected limit: up to ${parallelLimit} parallel exports for this codec.`
+                : `Detected limit: up to ${parallelLimit} parallel exports for this codec. Default is ${getSafeDefaultParallelExports(parallelLimit)} for stability.`
             }
             control={
               <Dropdown
@@ -508,7 +527,7 @@ export default function ExportSection() {
       {showContainerSetting && (
         <ExportSetting
           label="Container"
-          description="File format wrapper: MP4, MKV, MOV, AVI, or MXF."
+          description="File format wrapper: MP4, MKV, or MOV."
           control={
             <Dropdown
               className="settings-wide-dropdown"

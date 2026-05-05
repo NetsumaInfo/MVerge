@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from "react";
 import { FaChevronDown } from "react-icons/fa";
 
 export interface DropdownOption<T> {
@@ -14,6 +14,7 @@ interface DropdownProps<T> {
   onChange: (value: T) => void;
   className?: string;
   disabled?: boolean;
+  preferredDirection?: "auto" | "up" | "down";
 }
 
 export default function Dropdown<T extends string | number>({
@@ -22,9 +23,13 @@ export default function Dropdown<T extends string | number>({
   onChange,
   className = "",
   disabled = false,
+  preferredDirection = "auto",
 }: DropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const [menuMaxHeight, setMenuMaxHeight] = useState<number>(220);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -45,6 +50,43 @@ export default function Dropdown<T extends string | number>({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+
+    const recalculateDirection = () => {
+      const container = containerRef.current;
+      const menu = menuRef.current;
+      if (!container || !menu) return;
+
+      const viewportHeight = window.innerHeight;
+      const rect = container.getBoundingClientRect();
+      const gap = 6;
+      const viewportPadding = 12;
+      const spaceBelow = viewportHeight - rect.bottom - gap - viewportPadding;
+      const spaceAbove = rect.top - gap - viewportPadding;
+      const preferredHeight = Math.min(menu.scrollHeight, 420);
+
+      let shouldOpenUp = spaceBelow < preferredHeight && spaceAbove > spaceBelow;
+      if (preferredDirection === "up") shouldOpenUp = true;
+      if (preferredDirection === "down") shouldOpenUp = false;
+
+      const availableSpace = Math.max(0, Math.floor(shouldOpenUp ? spaceAbove : spaceBelow));
+      const computedMaxHeight =
+        availableSpace > 0 ? Math.min(preferredHeight, availableSpace) : preferredHeight;
+
+      setOpenUp(shouldOpenUp);
+      setMenuMaxHeight(Math.max(1, computedMaxHeight));
+    };
+
+    recalculateDirection();
+    window.addEventListener("resize", recalculateDirection);
+    window.addEventListener("scroll", recalculateDirection, true);
+    return () => {
+      window.removeEventListener("resize", recalculateDirection);
+      window.removeEventListener("scroll", recalculateDirection, true);
+    };
+  }, [isOpen, options.length, preferredDirection]);
 
   const toggleDropdown = () => {
     if (!disabled) setIsOpen(!isOpen);
@@ -68,7 +110,7 @@ export default function Dropdown<T extends string | number>({
   return (
     <div
       ref={containerRef}
-      className={`custom-dropdown ${className} ${isOpen ? "open" : ""} ${
+      className={`custom-dropdown ${className} ${isOpen ? "open" : ""} ${openUp ? "open-up" : ""} ${
         disabled ? "disabled" : ""
       }`}
     >
@@ -84,7 +126,7 @@ export default function Dropdown<T extends string | number>({
       </div>
 
       {isOpen && (
-        <div className="dropdown-menu">
+        <div ref={menuRef} className="dropdown-menu" style={{ maxHeight: `${menuMaxHeight}px` }}>
           {options.map((option) => (
             <div
               key={option.value}

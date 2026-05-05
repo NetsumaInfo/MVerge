@@ -205,6 +205,7 @@ export default function PreviewContainer (props: PreviewContainerProps) {
               options={exportProfileOptions}
               value={activeExportProfile.id}
               onChange={setActiveExportProfileId}
+              preferredDirection="up"
             />
           </div>
         </div>

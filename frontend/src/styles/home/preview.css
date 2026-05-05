@@ -205,6 +205,10 @@
     border: none !important;
 }
 
+.export-profile-select.open {
+    z-index: 4500;
+}
+
 .export-profile-select .dropdown-trigger,
 .export-format-select .dropdown-trigger {
     min-height: 44px !important;
@@ -265,6 +269,11 @@
 .export-profile-select .dropdown-item-description {
     font-size: 0.72rem;
     color: rgba(255, 255, 255, 0.58);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
 }
 
 .export-profile-select .dropdown-item-icon {
@@ -288,6 +297,11 @@
 .export-profile-select .dropdown-item.active,
 .export-format-select .dropdown-item.active {
     color: black !important;
+}
+
+.export-profile-select .dropdown-menu {
+    max-height: min(56vh, 360px);
+    overflow-y: auto;
 }
 
 .export-path-section {
@@ -687,4 +701,102 @@
 .steps-list li b {
     color: white;
     font-weight: 500;
+}
+
+@media (max-width: 980px) {
+    .preview-container {
+        padding: 12px;
+    }
+
+    .preview-view-switcher {
+        gap: 16px;
+        margin-bottom: 10px;
+    }
+
+    .export-panel,
+    .info-panel {
+        max-width: 100%;
+    }
+
+    .export-profile-group,
+    .export-profile-select,
+    .export-format-select {
+        width: 100% !important;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .preview-container {
+        padding: 10px;
+    }
+
+    .switcher-btn {
+        font-size: 0.66rem;
+        letter-spacing: 1.6px;
+    }
+
+    .export-panel {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .export-title {
+        font-size: 0.95rem;
+        letter-spacing: 1.5px;
+    }
+
+    .export-label {
+        font-size: 0.72rem;
+        letter-spacing: 1px;
+    }
+
+    .export-profile-select .dropdown-trigger,
+    .export-format-select .dropdown-trigger {
+        min-height: 40px !important;
+        padding: 7px 8px !important;
+    }
+
+    .export-profile-select .dropdown-value.rich .dropdown-item-content {
+        grid-template-columns: 28px minmax(0, 1fr);
+        column-gap: 8px;
+    }
+
+    .export-profile-select .dropdown-item-icon {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+    }
+
+    .export-profile-select .dropdown-item-icon svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .export-profile-select .dropdown-item-label {
+        font-size: 0.84rem;
+    }
+
+    .export-profile-select .dropdown-item-description {
+        font-size: 0.66rem;
+    }
+
+    .export-main-button {
+        height: 38px !important;
+        font-size: 1rem !important;
+        letter-spacing: 1px;
+    }
+
+    .platform-switcher {
+        gap: 4px;
+        margin: 10px 0 14px 0;
+        padding: 3px;
+    }
+
+    .platform-btn {
+        font-size: 0.68rem;
+        letter-spacing: 0.6px;
+        gap: 4px;
+        padding: 6px 4px;
+    }
 }
