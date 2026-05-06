@@ -1,163 +1,240 @@
 use std::path::Path;
 
-use super::types::ExportOptionsPayload;
+use super::types::{ExportOptionsPayload, GpuEncoderCapabilitiesPayload};
 
-pub(super) fn append_video_encode_args(
-    args: &mut Vec<String>,
-    options: Option<&ExportOptionsPayload>,
-) {
-    let raw_codec = options.map(|o| o.codec.as_str()).unwrap_or("h264_high");
-    let codec = match raw_codec {
+fn normalize_codec(raw_codec: &str) -> &str {
+    match raw_codec {
         "h264" => "h264_high",
         "h265" => "h265_main",
         "av1" => "av1_main",
         other => other,
-    };
+    }
+}
 
-    let hardware_mode = options.map(|o| o.hardware_mode.as_str()).unwrap_or("cpu");
-    let gpu_requested = hardware_mode == "gpu" || hardware_mode == "auto";
-    let force_cpu_when_auto = hardware_mode == "auto"
-        && matches!(
-            codec,
-            "h264_high10" | "h264_high422" | "h265_main12" | "h265_main422_10"
-        );
-    let use_gpu = gpu_requested && !force_cpu_when_auto;
+fn is_nvenc_encoder(encoder: &str) -> bool {
+    encoder.ends_with("_nvenc")
+}
 
-    match codec {
+pub(super) fn select_gpu_encoder_for_codec<'a>(
+    codec: &str,
+    gpu_capabilities: &'a GpuEncoderCapabilitiesPayload,
+) -> Option<&'a str> {
+    let normalized_codec = normalize_codec(codec);
+    if normalized_codec.starts_with("h264_") {
+        return gpu_capabilities.h264_encoder.as_deref();
+    }
+    if normalized_codec.starts_with("h265_") {
+        return gpu_capabilities.h265_encoder.as_deref();
+    }
+    if normalized_codec == "av1_main" {
+        return gpu_capabilities.av1_encoder.as_deref();
+    }
+    None
+}
+
+fn append_gpu_video_encode_args(args: &mut Vec<String>, codec: &str, gpu_encoder: &str) {
+    let normalized_codec = normalize_codec(codec);
+    let nvenc = is_nvenc_encoder(gpu_encoder);
+
+    match normalized_codec {
         "h264_main" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "h264_nvenc".into(),
-                    "-profile:v".into(),
-                    "main".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-cq".into(),
-                    "19".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx264".into(),
-                    "-profile:v".into(),
-                    "main".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-preset".into(),
-                    "medium".into(),
-                    "-crf".into(),
-                    "18".into(),
-                ]);
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "main".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "19".into()]);
             }
         }
         "h264_high10" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "h264_nvenc".into(),
-                    "-profile:v".into(),
-                    "high10".into(),
-                    "-pix_fmt".into(),
-                    "p010le".into(),
-                    "-cq".into(),
-                    "20".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx264".into(),
-                    "-profile:v".into(),
-                    "high10".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p10le".into(),
-                    "-preset".into(),
-                    "slow".into(),
-                    "-crf".into(),
-                    "19".into(),
-                ]);
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "high10".into(),
+                "-pix_fmt".into(),
+                "p010le".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "20".into()]);
             }
         }
         "h264_high422" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "h264_nvenc".into(),
-                    "-profile:v".into(),
-                    "high422".into(),
-                    "-pix_fmt".into(),
-                    "yuv422p".into(),
-                    "-cq".into(),
-                    "20".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx264".into(),
-                    "-profile:v".into(),
-                    "high422".into(),
-                    "-pix_fmt".into(),
-                    "yuv422p".into(),
-                    "-preset".into(),
-                    "slow".into(),
-                    "-crf".into(),
-                    "18".into(),
-                ]);
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "high422".into(),
+                "-pix_fmt".into(),
+                "yuv422p".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "20".into()]);
             }
         }
         "h265_main" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "hevc_nvenc".into(),
-                    "-profile:v".into(),
-                    "main".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-cq".into(),
-                    "19".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx265".into(),
-                    "-profile:v".into(),
-                    "main".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-preset".into(),
-                    "medium".into(),
-                    "-crf".into(),
-                    "20".into(),
-                ]);
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "main".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "19".into()]);
             }
         }
         "h265_main10" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "hevc_nvenc".into(),
-                    "-profile:v".into(),
-                    "main10".into(),
-                    "-pix_fmt".into(),
-                    "p010le".into(),
-                    "-cq".into(),
-                    "20".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx265".into(),
-                    "-profile:v".into(),
-                    "main10".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p10le".into(),
-                    "-preset".into(),
-                    "slow".into(),
-                    "-crf".into(),
-                    "21".into(),
-                ]);
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "main10".into(),
+                "-pix_fmt".into(),
+                "p010le".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "20".into()]);
             }
+        }
+        "h265_main12" => {
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "main12".into(),
+                "-pix_fmt".into(),
+                "yuv420p12le".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "22".into()]);
+            }
+        }
+        "h265_main422_10" => {
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "main422-10".into(),
+                "-pix_fmt".into(),
+                "yuv422p10le".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "21".into()]);
+            }
+        }
+        "av1_main" => {
+            args.extend([
+                "-c:v".into(),
+                gpu_encoder.into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "28".into()]);
+            }
+        }
+        _ => {
+            args.extend(["-c:v".into(), gpu_encoder.into()]);
+            args.extend([
+                "-profile:v".into(),
+                "high".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+            ]);
+            if nvenc {
+                args.extend(["-cq".into(), "19".into()]);
+            }
+        }
+    }
+}
+
+pub(super) fn append_video_encode_args(
+    args: &mut Vec<String>,
+    options: Option<&ExportOptionsPayload>,
+    gpu_encoder: Option<&str>,
+) {
+    let raw_codec = options.map(|o| o.codec.as_str()).unwrap_or("h264_high");
+    let codec = normalize_codec(raw_codec);
+
+    let hardware_mode = options.map(|o| o.hardware_mode.as_str()).unwrap_or("cpu");
+    let gpu_requested = hardware_mode == "gpu" || hardware_mode == "auto";
+
+    if gpu_requested {
+        if let Some(encoder) = gpu_encoder {
+            append_gpu_video_encode_args(args, codec, encoder);
+            return;
+        }
+    }
+
+    match codec {
+        "h264_main" => {
+            args.extend([
+                "-c:v".into(),
+                "libx264".into(),
+                "-profile:v".into(),
+                "main".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+                "-preset".into(),
+                "medium".into(),
+                "-crf".into(),
+                "18".into(),
+            ]);
+        }
+        "h264_high10" => {
+            args.extend([
+                "-c:v".into(),
+                "libx264".into(),
+                "-profile:v".into(),
+                "high10".into(),
+                "-pix_fmt".into(),
+                "yuv420p10le".into(),
+                "-preset".into(),
+                "slow".into(),
+                "-crf".into(),
+                "19".into(),
+            ]);
+        }
+        "h264_high422" => {
+            args.extend([
+                "-c:v".into(),
+                "libx264".into(),
+                "-profile:v".into(),
+                "high422".into(),
+                "-pix_fmt".into(),
+                "yuv422p".into(),
+                "-preset".into(),
+                "slow".into(),
+                "-crf".into(),
+                "18".into(),
+            ]);
+        }
+        "h265_main" => {
+            args.extend([
+                "-c:v".into(),
+                "libx265".into(),
+                "-profile:v".into(),
+                "main".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+                "-preset".into(),
+                "medium".into(),
+                "-crf".into(),
+                "20".into(),
+            ]);
+        }
+        "h265_main10" => {
+            args.extend([
+                "-c:v".into(),
+                "libx265".into(),
+                "-profile:v".into(),
+                "main10".into(),
+                "-pix_fmt".into(),
+                "yuv420p10le".into(),
+                "-preset".into(),
+                "slow".into(),
+                "-crf".into(),
+                "21".into(),
+            ]);
         }
         "h265_main12" => {
             args.extend([
@@ -188,25 +265,14 @@ pub(super) fn append_video_encode_args(
             ]);
         }
         "av1_main" => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "av1_nvenc".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-cq".into(),
-                    "28".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libsvtav1".into(),
-                    "-preset".into(),
-                    "6".into(),
-                    "-crf".into(),
-                    "32".into(),
-                ]);
-            }
+            args.extend([
+                "-c:v".into(),
+                "libsvtav1".into(),
+                "-preset".into(),
+                "6".into(),
+                "-crf".into(),
+                "32".into(),
+            ]);
         }
         "prores_422_lt" => {
             args.extend([
@@ -351,31 +417,18 @@ pub(super) fn append_video_encode_args(
             ]);
         }
         _ => {
-            if use_gpu {
-                args.extend([
-                    "-c:v".into(),
-                    "h264_nvenc".into(),
-                    "-profile:v".into(),
-                    "high".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-cq".into(),
-                    "19".into(),
-                ]);
-            } else {
-                args.extend([
-                    "-c:v".into(),
-                    "libx264".into(),
-                    "-profile:v".into(),
-                    "high".into(),
-                    "-pix_fmt".into(),
-                    "yuv420p".into(),
-                    "-preset".into(),
-                    "medium".into(),
-                    "-crf".into(),
-                    "18".into(),
-                ]);
-            }
+            args.extend([
+                "-c:v".into(),
+                "libx264".into(),
+                "-profile:v".into(),
+                "high".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+                "-preset".into(),
+                "medium".into(),
+                "-crf".into(),
+                "18".into(),
+            ]);
         }
     }
 }
@@ -447,15 +500,17 @@ pub(super) fn ffmpeg_reencode_args(
     output: &str,
     options: Option<&ExportOptionsPayload>,
     input_seek_ms: Option<u64>,
+    gpu_encoder: Option<&str>,
 ) -> Vec<String> {
     let mut args = vec!["-y".to_string()];
-    if let Some(ms) = input_seek_ms.filter(|ms| *ms > 0) {
+    let output_seek = input_seek_ms.filter(|ms| *ms > 0).map(|ms| {
         let seconds = ms as f64 / 1000.0;
         let value = format!("{seconds:.6}");
-        let seek = value.trim_end_matches('0').trim_end_matches('.').to_string();
-        args.push("-ss".to_string());
-        args.push(seek);
-    }
+        value
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
+    });
 
     // Timestamp normalization to reduce editor import edge cases.
     args.extend([
@@ -467,16 +522,24 @@ pub(super) fn ffmpeg_reencode_args(
         "0:a?".to_string(),
         "-map_metadata".to_string(),
         "-1".to_string(),
-        "-fflags".to_string(),
-        "+genpts".to_string(),
-        "-avoid_negative_ts".to_string(),
-        "make_zero".to_string(),
-        "-vf".to_string(),
-        "setpts=PTS-STARTPTS".to_string(),
     ]);
 
-    append_video_encode_args(&mut args, options);
+    if let Some(seek) = output_seek {
+        // Keep seek on output side for frame-accurate trimming when re-encoding.
+        args.push("-ss".to_string());
+        args.push(seek);
+    }
+
+    args.extend(["-vf".to_string(), "setpts=PTS-STARTPTS".to_string()]);
+    let audio_mode = options.map(|o| o.audio_mode.as_str()).unwrap_or("aac");
+    if audio_mode != "none" && audio_mode != "copy" {
+        args.extend(["-af".to_string(), "asetpts=PTS-STARTPTS".to_string()]);
+    }
+
+    append_video_encode_args(&mut args, options, gpu_encoder);
+    args.extend(["-enc_time_base:v".to_string(), "demux".to_string()]);
     append_audio_encode_args(&mut args, options);
+    args.extend(["-fps_mode".to_string(), "passthrough".to_string()]);
 
     let ext = Path::new(output)
         .extension()

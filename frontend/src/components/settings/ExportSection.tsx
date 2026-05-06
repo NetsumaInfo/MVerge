@@ -23,11 +23,9 @@ import {
   getCodecFamily,
   getCodecOptionsForFamily,
   getExportProfileSummary,
-  isCodecNvencEligible,
-  isCodecSupportedByNvidiaProfile,
+  isCodecGpuEligible,
   isQuickDownloadCompatibleWorkflow,
   isXmlTimelineWorkflow,
-  getNvidiaEncoderProfile,
   getParallelExportLimit,
   getSafeDefaultParallelExports,
   normalizeExportProfile,
@@ -41,6 +39,7 @@ import {
   type ExportProfile,
   type ExportProfileIcon,
   type ExportWorkflow,
+  type GpuEncoderCapabilities,
   type NvidiaDetectionResult,
   type NvidiaEncoderProfile,
 } from "../../features/export/profiles";
@@ -68,6 +67,16 @@ const DEFAULT_DETECTION: NvidiaDetectionResult = {
   hasNvidiaGpu: false,
   gpuName: null,
   profile: "unsupported",
+};
+const DEFAULT_GPU_CAPABILITIES: GpuEncoderCapabilities = {
+  hasGpuEncoder: false,
+  preferredBackend: "none",
+  availableBackends: [],
+  availableVideoEncoders: [],
+  h264Encoder: null,
+  h265Encoder: null,
+  av1Encoder: null,
+  maxParallelExports: 1,
 };
 const FEATURED_PROFILE_ICONS_KEY = "amverge.featuredProfileIcons";
 const MAX_INLINE_VISIBLE_ICON_COUNT = 8;
@@ -120,6 +129,17 @@ function getCurrentInlineVisibleIconCount(): number {
   return getInlineVisibleIconCount(window.innerWidth);
 }
 
+function resolveGpuEncoderForCodec(
+  codec: ExportProfile["codec"],
+  capabilities: GpuEncoderCapabilities
+): string | null {
+  if (codec === "av1_main" || codec === "av1") return capabilities.av1Encoder;
+  const family = getCodecFamily(codec);
+  if (family === "h264") return capabilities.h264Encoder;
+  if (family === "h265") return capabilities.h265Encoder;
+  return null;
+}
+
 function ProfileIconGlyph({ icon, customIconPath }: ProfileIconGlyphProps) {
   return renderProfileIcon({ icon, customIconPath });
 }
@@ -139,6 +159,9 @@ export default function ExportSection() {
   const removeCustomProfileIcon = useGeneralSettingsStore((state) => state.removeCustomProfileIcon);
 
   const [nvidiaDetection, setNvidiaDetection] = useState<NvidiaDetectionResult>(DEFAULT_DETECTION);
+  const [gpuCapabilities, setGpuCapabilities] = useState<GpuEncoderCapabilities>(
+    DEFAULT_GPU_CAPABILITIES
+  );
   // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [gpuProbeComplete, setGpuProbeComplete] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -195,9 +218,6 @@ export default function ExportSection() {
     return quickDownloadProfileOptions[0]?.value ?? activeProfile.id;
   }, [quickDownloadProfileId, quickDownloadProfileOptions, activeProfile.id]);
 
-  const parallelLimit = getParallelExportLimit(activeProfile);
-  const parallelLocked = parallelLimit <= 1;
-  const effectiveParallelExports = Math.min(activeProfile.parallelExports, parallelLimit);
   const encodingWorkflow = usesEncoding(activeProfile.workflow);
   const editorWorkflow = usesEditorTarget(activeProfile.workflow);
   const xmlTimelineWorkflow = isXmlTimelineWorkflow(activeProfile.workflow);
@@ -205,15 +225,21 @@ export default function ExportSection() {
   const showAudioSetting = supportsAudioMode(activeProfile.workflow);
   const showContainerSetting = supportsContainerSelection(activeProfile.workflow);
   const codecFamily = getCodecFamily(activeProfile.codec);
-  const nvidiaProfile = getNvidiaEncoderProfile(activeProfile.nvidiaEncoderProfile);
-  const codecNvencEligible = isCodecNvencEligible(activeProfile.codec);
-  const nvidiaSupportsSelectedCodec = isCodecSupportedByNvidiaProfile(
-    activeProfile.codec,
-    activeProfile.nvidiaEncoderProfile
-  );
-  const gpuReadyForCodec = nvidiaDetection.hasNvidiaGpu && nvidiaSupportsSelectedCodec;
-  const encoderLockedToCpu =
-    encodingWorkflow && (!codecNvencEligible || (gpuProbeComplete && !gpuReadyForCodec));
+  const codecGpuEligible = isCodecGpuEligible(activeProfile.codec);
+  const selectedGpuEncoder = resolveGpuEncoderForCodec(activeProfile.codec, gpuCapabilities);
+  const gpuReadyForCodec = Boolean(selectedGpuEncoder);
+  const encoderLockedToCpu = encodingWorkflow && !codecGpuEligible;
+  const nvidiaParallelLimit = getParallelExportLimit(activeProfile);
+  const parallelLimit =
+    !encodingWorkflow || activeProfile.hardwareMode === "cpu"
+      ? 1
+      : !codecGpuEligible || !gpuReadyForCodec
+        ? 1
+        : gpuCapabilities.preferredBackend === "nvidia"
+          ? nvidiaParallelLimit
+          : 1;
+  const parallelLocked = parallelLimit <= 1;
+  const effectiveParallelExports = Math.min(activeProfile.parallelExports, parallelLimit);
 
   const codecProfileOptions = useMemo(() => getCodecOptionsForFamily(codecFamily), [codecFamily]);
 
@@ -377,17 +403,30 @@ export default function ExportSection() {
   useEffect(() => {
     let canceled = false;
 
-    invoke<NvidiaDetectionResult>("detect_nvidia_encoder_profile")
-      .then((detected) => {
-        if (canceled) return;
-        setNvidiaDetection(detected);
-      })
-      .catch((error) => {
-        console.error("Failed to detect NVIDIA encoder profile:", error);
-      })
-      .finally(() => {
-        if (!canceled) setGpuProbeComplete(true);
-      });
+    const detectHardware = async () => {
+      const [nvidiaResult, gpuResult] = await Promise.allSettled([
+        invoke<NvidiaDetectionResult>("detect_nvidia_encoder_profile"),
+        invoke<GpuEncoderCapabilities>("detect_gpu_encoder_capabilities"),
+      ]);
+
+      if (canceled) return;
+
+      if (nvidiaResult.status === "fulfilled") {
+        setNvidiaDetection(nvidiaResult.value);
+      } else {
+        console.error("Failed to detect NVIDIA encoder profile:", nvidiaResult.reason);
+      }
+
+      if (gpuResult.status === "fulfilled") {
+        setGpuCapabilities(gpuResult.value);
+      } else {
+        console.error("Failed to detect GPU encoder capabilities:", gpuResult.reason);
+      }
+
+      setGpuProbeComplete(true);
+    };
+
+    void detectHardware();
 
     return () => {
       canceled = true;
@@ -476,23 +515,33 @@ export default function ExportSection() {
     const resolvedProfile: NvidiaEncoderProfile = nvidiaDetection.hasNvidiaGpu
       ? nvidiaDetection.profile
       : "unsupported";
+    const detectedEncoderForCodec = resolveGpuEncoderForCodec(activeProfile.codec, gpuCapabilities);
+    const nextParallelLimit =
+      resolvedProfile !== "unsupported" &&
+      gpuCapabilities.preferredBackend === "nvidia" &&
+      Boolean(detectedEncoderForCodec) &&
+      codecGpuEligible
+        ? getParallelExportLimit({
+            ...activeProfile,
+            nvidiaEncoderProfile: resolvedProfile,
+          })
+        : 1;
 
-    if (activeProfile.nvidiaEncoderProfile !== resolvedProfile) {
-      const nextProfile = normalizeExportProfile({
-        ...activeProfile,
-        nvidiaEncoderProfile: resolvedProfile,
-      });
-      const nextLimit = getParallelExportLimit(nextProfile);
-      const shouldApplySafeDefault =
-        activeProfile.parallelExports <= 1 &&
-        activeProfile.nvidiaEncoderProfile === "unknown" &&
-        nextLimit > 1;
+    const shouldApplySafeDefault =
+      activeProfile.parallelExports <= 1 &&
+      activeProfile.nvidiaEncoderProfile === "unknown" &&
+      nextParallelLimit > 1;
+    const clampedParallelExports = shouldApplySafeDefault
+      ? getSafeDefaultParallelExports(nextParallelLimit)
+      : Math.max(1, Math.min(activeProfile.parallelExports, nextParallelLimit));
 
+    if (
+      activeProfile.nvidiaEncoderProfile !== resolvedProfile ||
+      clampedParallelExports !== activeProfile.parallelExports
+    ) {
       updateExportProfile(activeProfile.id, {
         nvidiaEncoderProfile: resolvedProfile,
-        parallelExports: shouldApplySafeDefault
-          ? getSafeDefaultParallelExports(nextLimit)
-          : activeProfile.parallelExports,
+        parallelExports: clampedParallelExports,
       });
     }
   }, [
@@ -500,8 +549,11 @@ export default function ExportSection() {
     activeProfile.id,
     activeProfile.nvidiaEncoderProfile,
     activeProfile.parallelExports,
+    activeProfile.codec,
+    codecGpuEligible,
     encodingWorkflow,
     gpuProbeComplete,
+    gpuCapabilities.preferredBackend,
     nvidiaDetection.hasNvidiaGpu,
     nvidiaDetection.profile,
     updateExportProfile,
@@ -980,19 +1032,21 @@ export default function ExportSection() {
             label="Video Encoder"
             description={
               encoderLockedToCpu ? (
-                codecNvencEligible ? (
-                  "CPU only for this profile/codec on current machine."
-                ) : (
-                  "Selected codec is CPU-only (no NVENC path)."
-                )
+                "Selected codec is CPU-only (no GPU encoder path)."
               ) : (
                 <>
-                  {nvidiaDetection.hasNvidiaGpu
-                    ? `Auto NVIDIA profile: ${nvidiaProfile.label}${nvidiaDetection.gpuName ? ` (${nvidiaDetection.gpuName})` : ""}.`
-                    : "No NVIDIA GPU detected. Auto mode falls back to CPU."}{" "}
-                  <a href={NVIDIA_ENCODER_SUPPORT_MATRIX_URL} target="_blank" rel="noreferrer">
-                    NVIDIA matrix
-                  </a>
+                  {!gpuProbeComplete
+                    ? "Detecting hardware encoders..."
+                    : gpuReadyForCodec
+                      ? `Detected GPU backend: ${gpuCapabilities.preferredBackend}${selectedGpuEncoder ? ` (${selectedGpuEncoder})` : ""}. Auto mode uses GPU and falls back to CPU on failure.`
+                      : gpuCapabilities.hasGpuEncoder
+                        ? "No compatible GPU encoder for selected codec on this machine. Auto mode falls back to CPU."
+                        : "No compatible GPU encoder detected. Auto mode falls back to CPU."}{" "}
+                  {nvidiaDetection.hasNvidiaGpu ? (
+                    <a href={NVIDIA_ENCODER_SUPPORT_MATRIX_URL} target="_blank" rel="noreferrer">
+                      NVIDIA matrix
+                    </a>
+                  ) : null}
                 </>
               )
             }
@@ -1011,7 +1065,7 @@ export default function ExportSection() {
             label="Parallel Encodes"
             description={
               parallelLocked
-                ? "Enabled only when NVIDIA profile and codec support parallel NVENC sessions."
+                ? "Enabled only when selected GPU backend supports parallel sessions (non-NVIDIA backends stay single-worker)."
                 : `Detected limit: up to ${parallelLimit} parallel exports for this codec. Default is ${getSafeDefaultParallelExports(parallelLimit)} for stability.`
             }
             control={

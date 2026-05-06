@@ -106,6 +106,17 @@ export type NvidiaDetectionResult = {
   profile: NvidiaEncoderProfile;
 };
 
+export type GpuEncoderCapabilities = {
+  hasGpuEncoder: boolean;
+  preferredBackend: string;
+  availableBackends: string[];
+  availableVideoEncoders: string[];
+  h264Encoder: string | null;
+  h265Encoder: string | null;
+  av1Encoder: string | null;
+  maxParallelExports: number;
+};
+
 export const SAFE_DEFAULT_PARALLEL_EXPORTS = 8;
 
 export const NVIDIA_ENCODER_SUPPORT_MATRIX_URL =
@@ -595,7 +606,7 @@ export function inferNvidiaProfileFromGpuName(gpuName: string | null | undefined
   return "unknown";
 }
 
-export function isCodecNvencEligible(codec: ExportCodec): boolean {
+export function isCodecGpuEligible(codec: ExportCodec): boolean {
   const normalized = coerceExportCodec(codec);
   return (
     normalized === "h264_main" ||
@@ -610,6 +621,8 @@ export function isCodecNvencEligible(codec: ExportCodec): boolean {
   );
 }
 
+export const isCodecNvencEligible = isCodecGpuEligible;
+
 export function isCodecSupportedByNvidiaProfile(
   codec: ExportCodec,
   nvidiaProfile: NvidiaEncoderProfile
@@ -622,9 +635,10 @@ export function getParallelExportLimit(profile: ExportProfile): number {
   if (!usesEncoding(profile.workflow) || profile.hardwareMode === "cpu") return 1;
 
   const codec = coerceExportCodec(profile.codec);
-  if (!isCodecNvencEligible(codec)) return 1;
+  if (!isCodecGpuEligible(codec)) return 1;
 
   const support = getNvidiaEncoderProfile(profile.nvidiaEncoderProfile);
+  if (support.value === "unknown" || support.value === "unsupported") return 1;
   if (!support.supportedCodecs.includes(codec)) return 1;
 
   return Math.max(1, support.maxParallelExports);
@@ -685,15 +699,7 @@ export function normalizeExportProfile(profile: ExportProfile): ExportProfile {
     ? profile.hardwareMode || "auto"
     : "cpu";
 
-  if (hardwareMode !== "cpu" && !isCodecNvencEligible(codec)) {
-    hardwareMode = "cpu";
-  }
-
-  if (
-    hardwareMode === "auto" &&
-    nvidiaEncoderProfile !== "unknown" &&
-    !isCodecSupportedByNvidiaProfile(codec, nvidiaEncoderProfile)
-  ) {
+  if (hardwareMode !== "cpu" && !isCodecGpuEligible(codec)) {
     hardwareMode = "cpu";
   }
 

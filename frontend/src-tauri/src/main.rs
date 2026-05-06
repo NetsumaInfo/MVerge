@@ -26,6 +26,7 @@ fn main() {
             commands::export::export_clips,
             commands::export::abort_export,
             commands::export::detect_nvidia_encoder_profile,
+            commands::export::detect_gpu_encoder_capabilities,
             commands::export::fast_merge,
             commands::export::fast_split,
             commands::export_xml::export_timeline_xml,

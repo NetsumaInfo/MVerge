@@ -23,26 +23,26 @@ pub(super) async fn fast_merge_inner(
     let mut cmd = Command::new(&ffmpeg);
     apply_no_window(&mut cmd);
 
-    let mut filter_input = String::new();
+    let mut filter_parts: Vec<String> = Vec::with_capacity(clips.len() * 2);
+    let mut concat_inputs = String::new();
     let mut args = vec!["-y".to_string()];
 
     for (index, clip) in clips.iter().enumerate() {
         args.push("-i".to_string());
         args.push(clip.clone());
-        filter_input.push_str(&format!("[{index}:v][{index}:a]"));
+        filter_parts.push(format!("[{index}:v:0]setpts=PTS-STARTPTS,format=yuv420p[v{index}]"));
+        filter_parts.push(format!("[{index}:a:0]asetpts=PTS-STARTPTS[a{index}]"));
+        concat_inputs.push_str(&format!("[v{index}][a{index}]"));
     }
 
     let filter_complex = format!(
-        "{}concat=n={}:v=1:a=1[v_raw][a_raw];[v_raw]setpts=PTS-STARTPTS,format=yuv420p[v];[a_raw]anull[a]",
-        filter_input,
+        "{};{}concat=n={}:v=1:a=1[v][a]",
+        filter_parts.join(";"),
+        concat_inputs,
         clips.len()
     );
 
     args.extend([
-        "-fflags".to_string(),
-        "+genpts".to_string(),
-        "-avoid_negative_ts".to_string(),
-        "make_zero".to_string(),
         "-filter_complex".to_string(),
         filter_complex,
         "-map".to_string(),
@@ -51,6 +51,10 @@ pub(super) async fn fast_merge_inner(
         "[a]".to_string(),
         "-map_metadata".to_string(),
         "-1".to_string(),
+        "-fps_mode".to_string(),
+        "passthrough".to_string(),
+        "-enc_time_base:v".to_string(),
+        "demux".to_string(),
         "-c:v".to_string(),
         "libx264".to_string(),
         "-crf".to_string(),
@@ -115,6 +119,12 @@ pub(super) async fn fast_split_inner(
             &split_time.to_string(),
             "-vf",
             "setpts=PTS-STARTPTS",
+            "-af",
+            "asetpts=PTS-STARTPTS",
+            "-fps_mode",
+            "passthrough",
+            "-enc_time_base:v",
+            "demux",
             "-c:v",
             "libx264",
             "-crf",
@@ -123,8 +133,6 @@ pub(super) async fn fast_split_inner(
             "veryfast",
             "-c:a",
             "aac",
-            "-avoid_negative_ts",
-            "make_zero",
             "-movflags",
             "+faststart",
             &output_path1,
@@ -156,6 +164,12 @@ pub(super) async fn fast_split_inner(
             "-1",
             "-vf",
             "setpts=PTS-STARTPTS",
+            "-af",
+            "asetpts=PTS-STARTPTS",
+            "-fps_mode",
+            "passthrough",
+            "-enc_time_base:v",
+            "demux",
             "-c:v",
             "libx264",
             "-crf",
@@ -164,8 +178,6 @@ pub(super) async fn fast_split_inner(
             "veryfast",
             "-c:a",
             "aac",
-            "-avoid_negative_ts",
-            "make_zero",
             "-movflags",
             "+faststart",
             &output_path2,

@@ -20,7 +20,9 @@ mod progress;
 mod runner;
 mod types;
 
-pub use types::{ExportOptionsPayload, NvidiaEncoderDetectionPayload};
+pub use types::{
+    ExportOptionsPayload, GpuEncoderCapabilitiesPayload, NvidiaEncoderDetectionPayload,
+};
 
 use types::ExportRuntime;
 
@@ -115,6 +117,28 @@ pub async fn export_clips(
 
     let ffmpeg = resolve_bundled_tool(&app, "ffmpeg")?;
     let ffprobe = resolve_bundled_tool(&app, "ffprobe")?;
+    let gpu_capabilities = hardware::detect_gpu_encoder_capabilities_inner(ffmpeg.clone())
+        .await
+        .unwrap_or_default();
+
+    if gpu_capabilities.has_gpu_encoder {
+        console_log(
+            "EXPORT|gpu",
+            &format!(
+                "backend={} h264={} h265={} av1={} max_parallel={}",
+                gpu_capabilities.preferred_backend,
+                gpu_capabilities.h264_encoder.as_deref().unwrap_or("none"),
+                gpu_capabilities.h265_encoder.as_deref().unwrap_or("none"),
+                gpu_capabilities.av1_encoder.as_deref().unwrap_or("none"),
+                gpu_capabilities.max_parallel_exports
+            ),
+        );
+    } else {
+        console_log(
+            "EXPORT|gpu",
+            "no hardware video encoder available; cpu path",
+        );
+    }
 
     let runtime = ExportRuntime {
         app,
@@ -123,6 +147,7 @@ pub async fn export_clips(
         abort_requested,
         active_pids,
         export_options,
+        gpu_capabilities,
         export_start_time: std::time::Instant::now(),
         remux_workflow,
         force_encode_workflow,
@@ -144,6 +169,14 @@ pub async fn export_clips(
 #[tauri::command]
 pub async fn detect_nvidia_encoder_profile() -> Result<NvidiaEncoderDetectionPayload, String> {
     hardware::detect_nvidia_encoder_profile_inner().await
+}
+
+#[tauri::command]
+pub async fn detect_gpu_encoder_capabilities(
+    app: AppHandle,
+) -> Result<GpuEncoderCapabilitiesPayload, String> {
+    let ffmpeg = resolve_bundled_tool(&app, "ffmpeg")?;
+    hardware::detect_gpu_encoder_capabilities_inner(ffmpeg).await
 }
 
 #[tauri::command]
