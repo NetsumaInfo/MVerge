@@ -8,7 +8,6 @@ import HomePage from "./pages/HomePage";
 import Menu from "./pages/Menu";
 import Settings from "./pages/Settings";
 import LoadingOverlay from "./components/LoadingOverlay";
-import BgProgressBar from "./components/BgProgressBar";
 
 import useDiscordRPC from "./hooks/useDiscordRPC";
 import useHEVCSupport from "./hooks/useHEVCSupport";
@@ -25,7 +24,6 @@ import { useEpisodePanelRuntimeStore } from "./stores/episodeStore";
 
 function App() {
   const loading = useAppStateStore((s) => s.loading);
-  const bgProgress = useAppStateStore((s) => s.bgProgress);
   const progress = useAppStateStore((s) => s.progress);
   const progressMsg = useAppStateStore((s) => s.progressMsg);
   const batchTotal = useAppStateStore((s) => s.batchTotal);
@@ -75,7 +73,7 @@ function App() {
 
       const defaultEpisodesPath = await invoke<string>("get_default_episodes_dir");
 
-      remapEpisodePaths(resolvedOldPath, defaultEpisodesPath);
+      remapEpisodePaths(resolvedOldPath, defaultEpisodesPath);      
       useGeneralSettingsStore.setState(DEFAULT_GENERAL_SETTINGS);
     } catch (err) {
       window.alert("Failed to reset episode directory: " + String(err));
@@ -281,8 +279,6 @@ function App() {
             batchCurrentFile={batchCurrentFile || ""}
             onAbort={handleAbort}
           />
-        ) : bgProgress ? (
-          <BgProgressBar done={bgProgress.done} total={bgProgress.total} />
         ) : null
       }
       sidebarEnabled={sidebarEnabled}
