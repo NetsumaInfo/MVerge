@@ -1,5 +1,6 @@
 import type React from "react";
 import type { EpisodePanelProps, PointerDragSource } from "../types";
+import Tooltip from "../../common/Tooltip";
 import { TOOLTIPS } from "../../../utils/tooltips";
 
 type Folder = EpisodePanelProps["episodeFolders"][number];
@@ -55,7 +56,6 @@ export default function FolderRow({
         },
       })}
       onContextMenu={(e) => openFolderContextMenu(folder.id, e)}
-      title={folder.name}
       style={{ paddingLeft: `${8 + depth * 12}px` }}
     >
       <button
@@ -86,7 +86,9 @@ export default function FolderRow({
         ▸
       </button>
 
-      <span className="episode-panel-folder-name">{folder.name}</span>
+      <Tooltip label={folder.name} side="right">
+        <span className="episode-panel-folder-name">{folder.name}</span>
+      </Tooltip>
     </div>
   );
 }

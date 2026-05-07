@@ -11,15 +11,16 @@
 }
 
 .amv-tooltip__bubble {
-    position: absolute;
-    z-index: 9999;
+    position: fixed;
+    z-index: 2147483647;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(4px) scale(0.98);
-    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
-
     white-space: nowrap;
+    transform: translateY(4px) scale(0.98);
+    transform-origin: center;
+    transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s ease;
+
     font-family: 'Jersey 10', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 16px;
     line-height: 1;
@@ -27,12 +28,12 @@
     color: rgb(var(--accent-rgb));
     padding: 6px 10px;
     border-radius: 8px;
-    border: 1px solid rgb(var(--accent-rgb) / 0.65);
+    border: 1px solid rgb(var(--accent-rgb) / 0.68);
     background: linear-gradient(180deg, rgba(10, 12, 10, 0.97), rgba(0, 0, 0, 0.98));
     box-shadow:
         0 0 0 1px rgb(255 255 255 / 0.05) inset,
-        0 10px 22px rgba(0, 0, 0, 0.55),
-        0 0 16px rgb(var(--accent-rgb) / 0.16);
+        0 12px 24px rgba(0, 0, 0, 0.58),
+        0 0 18px rgb(var(--accent-rgb) / 0.16);
 }
 
 .amv-tooltip__bubble::after {
@@ -40,82 +41,68 @@
     position: absolute;
     width: 8px;
     height: 8px;
-    border-right: 1px solid rgb(var(--accent-rgb) / 0.65);
-    border-bottom: 1px solid rgb(var(--accent-rgb) / 0.65);
+    border-right: 1px solid rgb(var(--accent-rgb) / 0.68);
+    border-bottom: 1px solid rgb(var(--accent-rgb) / 0.68);
     background: rgba(4, 5, 4, 0.98);
 }
 
-.amv-tooltip:hover .amv-tooltip__bubble,
-.amv-tooltip:focus-within .amv-tooltip__bubble {
+.amv-tooltip__bubble.is-visible {
     opacity: 1;
     visibility: visible;
+}
+
+.amv-tooltip__bubble--top {
+    transform: translateY(4px) scale(0.98);
+}
+
+.amv-tooltip__bubble--top.is-visible {
     transform: translateY(0) scale(1);
 }
 
-.amv-tooltip--top .amv-tooltip__bubble {
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px) scale(0.98);
-}
-
-.amv-tooltip--top .amv-tooltip__bubble::after {
+.amv-tooltip__bubble--top::after {
     left: 50%;
     bottom: -5px;
     transform: translateX(-50%) rotate(45deg);
 }
 
-.amv-tooltip--top:hover .amv-tooltip__bubble,
-.amv-tooltip--top:focus-within .amv-tooltip__bubble {
-    transform: translateX(-50%) translateY(0) scale(1);
+.amv-tooltip__bubble--bottom {
+    transform: translateY(-4px) scale(0.98);
 }
 
-.amv-tooltip--bottom .amv-tooltip__bubble {
-    top: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%) translateY(-4px) scale(0.98);
+.amv-tooltip__bubble--bottom.is-visible {
+    transform: translateY(0) scale(1);
 }
 
-.amv-tooltip--bottom .amv-tooltip__bubble::after {
+.amv-tooltip__bubble--bottom::after {
     left: 50%;
     top: -5px;
     transform: translateX(-50%) rotate(225deg);
 }
 
-.amv-tooltip--bottom:hover .amv-tooltip__bubble,
-.amv-tooltip--bottom:focus-within .amv-tooltip__bubble {
-    transform: translateX(-50%) translateY(0) scale(1);
+.amv-tooltip__bubble--left {
+    transform: translateX(4px) scale(0.98);
 }
 
-.amv-tooltip--left .amv-tooltip__bubble {
-    right: calc(100% + 10px);
-    top: 50%;
-    transform: translateX(4px) translateY(-50%) scale(0.98);
+.amv-tooltip__bubble--left.is-visible {
+    transform: translateX(0) scale(1);
 }
 
-.amv-tooltip--left .amv-tooltip__bubble::after {
+.amv-tooltip__bubble--left::after {
     right: -5px;
     top: 50%;
     transform: translateY(-50%) rotate(-45deg);
 }
 
-.amv-tooltip--left:hover .amv-tooltip__bubble,
-.amv-tooltip--left:focus-within .amv-tooltip__bubble {
-    transform: translateX(0) translateY(-50%) scale(1);
+.amv-tooltip__bubble--right {
+    transform: translateX(-4px) scale(0.98);
 }
 
-.amv-tooltip--right .amv-tooltip__bubble {
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateX(-4px) translateY(-50%) scale(0.98);
+.amv-tooltip__bubble--right.is-visible {
+    transform: translateX(0) scale(1);
 }
 
-.amv-tooltip--right .amv-tooltip__bubble::after {
+.amv-tooltip__bubble--right::after {
     left: -5px;
     top: 50%;
     transform: translateY(-50%) rotate(135deg);
-}
-
-.amv-tooltip--right:hover .amv-tooltip__bubble,
-.amv-tooltip--right:focus-within .amv-tooltip__bubble {
-    transform: translateX(0) translateY(-50%) scale(1);
 }

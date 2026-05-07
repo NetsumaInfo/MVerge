@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from "react-image-crop";
 import { FaUndo, FaRedo, FaArrowsAltH, FaArrowsAltV, FaExpand, FaSyncAlt } from "react-icons/fa";
+import Tooltip from "../common/Tooltip";
 import { TOOLTIPS } from "../../utils/tooltips";
 import "react-image-crop/dist/ReactCrop.css";
 
@@ -136,9 +137,11 @@ export default function CropModal({
             <FaExpand className="header-icon" />
             <h3>{title}</h3>
           </div>
-          <button className="reset-btn" onClick={handleReset} title={TOOLTIPS.crop.reset}>
-            <FaSyncAlt /> Reset
-          </button>
+          <Tooltip label={TOOLTIPS.crop.reset} side="bottom">
+            <button className="reset-btn" onClick={handleReset}>
+              <FaSyncAlt /> Reset
+            </button>
+          </Tooltip>
         </div>
 
         <div className="crop-container-wrapper">
@@ -212,26 +215,32 @@ export default function CropModal({
           <div className="toolbar-section">
             <label>Rotate & Flip</label>
             <div className="transform-buttons">
-              <button className="toolbar-btn" onClick={() => setRotation((r) => r - 90)} title={TOOLTIPS.crop.rotateLeft}>
-                <FaUndo />
-              </button>
-              <button className="toolbar-btn" onClick={() => setRotation((r) => r + 90)} title={TOOLTIPS.crop.rotateRight}>
-                <FaRedo />
-              </button>
-              <button
-                className={`toolbar-btn ${flip.horizontal ? "active" : ""}`}
-                onClick={() => setFlip((f) => ({ ...f, horizontal: !f.horizontal }))}
-                title={TOOLTIPS.crop.flipHorizontal}
-              >
-                <FaArrowsAltH />
-              </button>
-              <button
-                className={`toolbar-btn ${flip.vertical ? "active" : ""}`}
-                onClick={() => setFlip((f) => ({ ...f, vertical: !f.vertical }))}
-                title={TOOLTIPS.crop.flipVertical}
-              >
-                <FaArrowsAltV />
-              </button>
+              <Tooltip label={TOOLTIPS.crop.rotateLeft} side="top">
+                <button className="toolbar-btn" onClick={() => setRotation((r) => r - 90)}>
+                  <FaUndo />
+                </button>
+              </Tooltip>
+              <Tooltip label={TOOLTIPS.crop.rotateRight} side="top">
+                <button className="toolbar-btn" onClick={() => setRotation((r) => r + 90)}>
+                  <FaRedo />
+                </button>
+              </Tooltip>
+              <Tooltip label={TOOLTIPS.crop.flipHorizontal} side="top">
+                <button
+                  className={`toolbar-btn ${flip.horizontal ? "active" : ""}`}
+                  onClick={() => setFlip((f) => ({ ...f, horizontal: !f.horizontal }))}
+                >
+                  <FaArrowsAltH />
+                </button>
+              </Tooltip>
+              <Tooltip label={TOOLTIPS.crop.flipVertical} side="top">
+                <button
+                  className={`toolbar-btn ${flip.vertical ? "active" : ""}`}
+                  onClick={() => setFlip((f) => ({ ...f, vertical: !f.vertical }))}
+                >
+                  <FaArrowsAltV />
+                </button>
+              </Tooltip>
             </div>
           </div>
 

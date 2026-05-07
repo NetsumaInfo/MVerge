@@ -9,6 +9,7 @@ import {
   FaTags,
 } from "react-icons/fa";
 import Dropdown from "../common/Dropdown";
+import Tooltip from "../common/Tooltip";
 import { useAppStateStore } from "../../stores/appStore.ts";
 import { useAppPersistedStore } from "../../stores/appStore.ts";
 import { useUIStateStore } from "../../stores/UIStore.ts";
@@ -209,13 +210,14 @@ export default function PreviewContainer (props: PreviewContainerProps) {
               value={exportDir || ""}
               onChange={(e) => setExportDir(e.target.value)}
             />
-            <button
-              className="buttons export-dir-browse"
-              onClick={handlePickExportDir}
-              title={TOOLTIPS.preview.browseOutputFolder}
-            >
-              <FaFolderOpen />
-            </button>
+            <Tooltip label={TOOLTIPS.preview.browseOutputFolder} side="top">
+              <button
+                className="buttons export-dir-browse"
+                onClick={handlePickExportDir}
+              >
+                <FaFolderOpen />
+              </button>
+            </Tooltip>
           </div>
         </div>
 

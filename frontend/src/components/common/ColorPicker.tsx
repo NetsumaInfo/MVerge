@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { HexColorPicker } from "react-colorful";
+import Tooltip from "./Tooltip";
 import { TOOLTIPS, getColorPresetTooltip } from "../../utils/tooltips";
 
 type ColorPickerProps = {
@@ -32,12 +33,13 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
 
   return (
     <div className="color-picker-container" ref={containerRef}>
-      <div
-        className="color-preview-box"
-        style={{ backgroundColor: color }}
-        onClick={() => setIsOpen(!isOpen)}
-        title={TOOLTIPS.colorPicker.open}
-      />
+      <Tooltip label={TOOLTIPS.colorPicker.open} side="left">
+        <div
+          className="color-preview-box"
+          style={{ backgroundColor: color }}
+          onClick={() => setIsOpen(!isOpen)}
+        />
+      </Tooltip>
       
       {isOpen && (
         <div className="color-picker-popover">
@@ -49,13 +51,13 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
             <label className="picker-label">Presets</label>
             <div className="color-presets-grid">
               {PRESET_COLORS.map((preset) => (
-                <div
-                  key={preset}
-                  className={`color-preset-item ${color.toLowerCase() === preset.toLowerCase() ? "active" : ""}`}
-                  style={{ backgroundColor: preset }}
-                  onClick={() => onChange(preset)}
-                  title={getColorPresetTooltip(preset)}
-                />
+                <Tooltip key={preset} label={getColorPresetTooltip(preset)} side="top">
+                  <div
+                    className={`color-preset-item ${color.toLowerCase() === preset.toLowerCase() ? "active" : ""}`}
+                    style={{ backgroundColor: preset }}
+                    onClick={() => onChange(preset)}
+                  />
+                </Tooltip>
               ))}
             </div>
           </div>

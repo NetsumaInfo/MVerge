@@ -1,5 +1,6 @@
 import type React from "react";
 import type { EpisodePanelProps, PointerDragSource } from "../types";
+import Tooltip from "../../common/Tooltip";
 
 type Episode = EpisodePanelProps["episodes"][number];
 
@@ -58,11 +59,12 @@ export default function EpisodeRow({
       onClick={handleEpisodeClick(episode.id)}
       onDoubleClick={() => onOpenEpisode(episode.id)}
       onContextMenu={(e) => openContextMenu(episode.id, e)}
-      title={episode.videoPath}
     >
-      <span className="episode-panel-episode-name">
-        {episode.displayName}
-      </span>
+      <Tooltip label={episode.videoPath} side="right">
+        <span className="episode-panel-episode-name">
+          {episode.displayName}
+        </span>
+      </Tooltip>
     </div>
   );
 }

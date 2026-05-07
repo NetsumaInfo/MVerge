@@ -24,7 +24,7 @@ export default function SidebarNav() {
 
         return (
           <div className="sidebar-button" key={button.page}>
-            <Tooltip label={button.tooltip} side="bottom" className="amv-tooltip--fill">
+            <Tooltip label={button.tooltip} side="top" className="amv-tooltip--fill">
               <button
                 type="button"
                 className={`sidebar-nav-button${isActive ? " is-active" : ""}`}

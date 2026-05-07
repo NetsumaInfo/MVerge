@@ -10,6 +10,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { LazyClipProps } from "./types.ts"
 import { DownloadButton } from "./DownloadButton.tsx";
 import { FaCheck, FaPlus } from "react-icons/fa";
+import Tooltip from "../common/Tooltip";
 import { useAppStateStore } from "../../stores/appStore.ts";
 import { useUIStateStore } from "../../stores/UIStore.ts";
 import { useGeneralSettingsStore, useThemeSettingsStore } from "../../stores/settingsStore.ts";
@@ -403,13 +404,14 @@ export const LazyClip = memo(function LazyClip({
       }}
     >
       {generalSettings.enableEditor && (
-        <button
-          className={`clip-timeline-toggle ${isSelected ? "active" : ""}`}
-          onClick={(e) => onToggleTimeline(clip.id, e)}
-          title={getTimelineToggleTooltip(isSelected)}
-        >
-          {isSelected ? <FaCheck /> : <FaPlus />}
-        </button>
+        <Tooltip label={getTimelineToggleTooltip(isSelected)} side="left">
+          <button
+            className={`clip-timeline-toggle ${isSelected ? "active" : ""}`}
+            onClick={(e) => onToggleTimeline(clip.id, e)}
+          >
+            {isSelected ? <FaCheck /> : <FaPlus />}
+          </button>
+        </Tooltip>
       )}
 
       {isVisible ? (

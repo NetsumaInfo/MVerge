@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useGeneralSettingsStore } from "../../stores/settingsStore";
 import { useEffect, useState } from "react";
+import Tooltip from "../common/Tooltip";
 import { getEpisodesPathTooltip } from "../../utils/tooltips";
 
 type GeneralSectionProps = {
@@ -167,12 +168,11 @@ export default function GeneralSection({
           >
             {generalSettings.episodesPath ? "Change" : "Select Path"}
           </button>
-          <span
-            className="settings-path-value"
-            title={getEpisodesPathTooltip(generalSettings.episodesPath)}
-          >
-            {getEpisodesPathTooltip(generalSettings.episodesPath)}
-          </span>
+          <Tooltip label={getEpisodesPathTooltip(generalSettings.episodesPath)} side="top">
+            <span className="settings-path-value">
+              {getEpisodesPathTooltip(generalSettings.episodesPath)}
+            </span>
+          </Tooltip>
         </div>
       </div>
       <p style={{ fontSize: "0.8rem", opacity: 0.6, marginLeft: "24px", marginBottom: "16px", marginTop: "-4px" }}>

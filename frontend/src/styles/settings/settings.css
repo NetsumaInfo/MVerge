@@ -540,6 +540,13 @@
     height: 38px;
 }
 
+.profile-icon-tile > .amv-tooltip,
+.profile-custom-icon-slot > .amv-tooltip,
+.profile-icon-control-inline > .amv-tooltip,
+.profile-icon-grid > .amv-tooltip {
+    display: contents;
+}
+
 .profile-icon-pin {
     position: absolute;
     top: 2px;
