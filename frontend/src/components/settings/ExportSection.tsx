@@ -42,6 +42,11 @@ import {
   type NvidiaEncoderProfile,
 } from "../../features/export/profiles";
 import { renderProfileIcon } from "../../features/export/profileIconUtils";
+import {
+  TOOLTIPS,
+  getPinQuickIconTooltip,
+  getProfileIconTooltip,
+} from "../../utils/tooltips";
 
 type ExportSettingProps = {
   label: string;
@@ -786,7 +791,7 @@ export default function ExportSection() {
                       key={`builtin-${item.value}`}
                       type="button"
                       className={`profile-icon-button${activeProfile.icon === item.value ? " active" : ""}`}
-                      title={item.value}
+                      title={getProfileIconTooltip(item.value)}
                       onClick={() => updateActiveProfile({ icon: item.value })}
                     >
                       <ProfileIconGlyph
@@ -804,7 +809,7 @@ export default function ExportSection() {
                     <button
                       type="button"
                       className={`profile-icon-button${isActiveCustom ? " active" : ""}`}
-                      title="Use custom icon"
+                      title={TOOLTIPS.exportProfile.useCustomIcon}
                       onClick={() => applyCustomIconSelection(item.path, false)}
                     >
                       <img
@@ -816,8 +821,8 @@ export default function ExportSection() {
                     <button
                       type="button"
                       className="profile-icon-delete"
-                      title="Delete custom icon"
-                      aria-label="Delete custom icon"
+                      title={TOOLTIPS.exportProfile.deleteCustomIcon}
+                      aria-label={TOOLTIPS.exportProfile.deleteCustomIcon}
                       onClick={(event) => {
                         event.stopPropagation();
                         void handleDeleteCustomIcon(item.path);
@@ -832,8 +837,8 @@ export default function ExportSection() {
             <button
               type="button"
               className={`profile-icon-button profile-upload-tile${activeProfile.icon === "custom" ? " active" : ""}`}
-              title="Add custom icon"
-              aria-label="Add custom icon"
+              title={TOOLTIPS.exportProfile.addCustomIcon}
+              aria-label={TOOLTIPS.exportProfile.addCustomIcon}
               onClick={() => {
                 void handlePickCustomIcon();
               }}
@@ -843,8 +848,8 @@ export default function ExportSection() {
             <button
               type="button"
               className="profile-icon-button profile-icon-more-trigger"
-              title="Choose icon"
-              aria-label="Choose icon"
+              title={TOOLTIPS.exportProfile.chooseIcon}
+              aria-label={TOOLTIPS.exportProfile.chooseIcon}
               aria-expanded={showIconPicker}
               onClick={() => setShowIconPicker((current) => !current)}
             >
@@ -863,7 +868,7 @@ export default function ExportSection() {
                         <button
                           type="button"
                           className={`profile-icon-button${activeProfile.icon === option.value ? " active" : ""}`}
-                          title={option.label}
+                          title={getProfileIconTooltip(option.label)}
                           onClick={() => {
                             updateActiveProfile({ icon: option.value });
                             setShowIconPicker(false);
@@ -874,8 +879,8 @@ export default function ExportSection() {
                         <button
                           type="button"
                           className={`profile-icon-pin${pinned ? " pinned" : ""}`}
-                          title={pinned ? "Unpin from quick icons" : "Pin to quick icons"}
-                          aria-label={pinned ? "Unpin from quick icons" : "Pin to quick icons"}
+                          title={getPinQuickIconTooltip(pinned)}
+                          aria-label={getPinQuickIconTooltip(pinned)}
                           onClick={(event) => {
                             event.stopPropagation();
                             toggleFeaturedIcon(option.value);
@@ -894,8 +899,8 @@ export default function ExportSection() {
                   <button
                     type="button"
                     className="profile-icon-button profile-upload-tile"
-                    title="Add custom icon"
-                    aria-label="Add custom icon"
+                    title={TOOLTIPS.exportProfile.addCustomIcon}
+                    aria-label={TOOLTIPS.exportProfile.addCustomIcon}
                     onClick={() => {
                       void handlePickCustomIcon();
                     }}
@@ -911,7 +916,7 @@ export default function ExportSection() {
                         <button
                           type="button"
                           className={`profile-icon-button${isActiveCustom ? " active" : ""}`}
-                          title="Use custom icon"
+                          title={TOOLTIPS.exportProfile.useCustomIcon}
                           onClick={() => {
                             applyCustomIconSelection(iconPath, true);
                           }}
@@ -925,8 +930,8 @@ export default function ExportSection() {
                         <button
                           type="button"
                           className={`profile-icon-pin profile-icon-pin-custom${pinnedCustom ? " pinned" : ""}`}
-                          title={pinnedCustom ? "Unpin from quick icons" : "Pin to quick icons"}
-                          aria-label={pinnedCustom ? "Unpin from quick icons" : "Pin to quick icons"}
+                          title={getPinQuickIconTooltip(pinnedCustom)}
+                          aria-label={getPinQuickIconTooltip(pinnedCustom)}
                           onClick={(event) => {
                             event.stopPropagation();
                             toggleFeaturedCustomIcon(iconPath);
@@ -937,8 +942,8 @@ export default function ExportSection() {
                         <button
                           type="button"
                           className="profile-icon-delete"
-                          title="Delete custom icon"
-                          aria-label="Delete custom icon"
+                          title={TOOLTIPS.exportProfile.deleteCustomIcon}
+                          aria-label={TOOLTIPS.exportProfile.deleteCustomIcon}
                           onClick={(event) => {
                             event.stopPropagation();
                             void handleDeleteCustomIcon(iconPath);

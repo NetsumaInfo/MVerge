@@ -1,5 +1,6 @@
 // Episode Panel toolbar. Renders Sort, New Folder, and Clear Cache actions.
 import { FaFolderPlus, FaSortAlphaDown, FaSortAlphaUp, FaTrashAlt } from "react-icons/fa";
+import { TOOLTIPS, getSortTooltip } from "../../../utils/tooltips";
 
 type EpisodePanelHeaderProps = {
   nextSortDirection: "asc" | "desc";
@@ -19,7 +20,7 @@ export default function EpisodePanelHeader({
   openNewFolderModal,
   openClearConfirmModal,
 }: EpisodePanelHeaderProps) {
-  const sortLabel = nextSortDirection === "asc" ? "Sort A-Z" : "Sort Z-A";
+  const sortLabel = getSortTooltip(nextSortDirection);
   const SortIcon = nextSortDirection === "asc" ? FaSortAlphaDown : FaSortAlphaUp;
 
   return (
@@ -47,8 +48,8 @@ export default function EpisodePanelHeader({
           type="button"
           className="episode-panel-action icon-only"
           onClick={() => openNewFolderModal(null)}
-          title="New folder"
-          aria-label="New folder"
+          title={TOOLTIPS.episodePanel.newFolder}
+          aria-label={TOOLTIPS.episodePanel.newFolder}
         >
           <FaFolderPlus aria-hidden="true" />
         </button>
@@ -57,8 +58,8 @@ export default function EpisodePanelHeader({
           type="button"
           className="episode-panel-action icon-only"
           onClick={openClearConfirmModal}
-          title="Clear episode panel cache"
-          aria-label="Clear episode panel cache"
+          title={TOOLTIPS.episodePanel.clearCache}
+          aria-label={TOOLTIPS.episodePanel.clearCache}
         >
           <FaTrashAlt aria-hidden="true" />
         </button>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { HexColorPicker } from "react-colorful";
+import { TOOLTIPS, getColorPresetTooltip } from "../../utils/tooltips";
 
 type ColorPickerProps = {
   color: string;
@@ -31,11 +32,11 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
 
   return (
     <div className="color-picker-container" ref={containerRef}>
-      <div 
-        className="color-preview-box" 
+      <div
+        className="color-preview-box"
         style={{ backgroundColor: color }}
         onClick={() => setIsOpen(!isOpen)}
-        title="Choose color"
+        title={TOOLTIPS.colorPicker.open}
       />
       
       {isOpen && (
@@ -53,7 +54,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
                   className={`color-preset-item ${color.toLowerCase() === preset.toLowerCase() ? "active" : ""}`}
                   style={{ backgroundColor: preset }}
                   onClick={() => onChange(preset)}
-                  title={preset}
+                  title={getColorPresetTooltip(preset)}
                 />
               ))}
             </div>

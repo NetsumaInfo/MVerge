@@ -3,6 +3,7 @@ import type { UseTimelineReturn } from "../../hooks/useTimeline";
 import TimelineSegmentChip from "./TimelineSegmentChip";
 import TimelinePlayhead from "./TimelinePlayhead";
 import TimelineRuler from "./TimelineRuler";
+import { TOOLTIPS } from "../../utils/tooltips";
 import "../../styles/home/timeline.css";
 
 type Props = {
@@ -245,7 +246,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             id="tl-btn-split"
             disabled={!canSplit}
             onClick={splitAtPlayhead}
-            title="Split at playhead (S)"
+            title={TOOLTIPS.timeline.split}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 1v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -260,7 +261,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             id="tl-btn-merge"
             disabled={!canMerge}
             onClick={mergeSelected}
-            title="Merge selected (M)"
+            title={TOOLTIPS.timeline.merge}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -275,7 +276,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             id="tl-btn-delete"
             disabled={!canDelete}
             onClick={deleteSelected}
-            title="Delete selected (Del)"
+            title={TOOLTIPS.timeline.delete}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -289,7 +290,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             className="tl-btn tl-btn-icon"
             onClick={undo}
             disabled={state.history.past.length === 0}
-            title="Undo (Ctrl+Z)"
+            title={TOOLTIPS.timeline.undo}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M4 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -300,7 +301,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             className="tl-btn tl-btn-icon"
             onClick={redo}
             disabled={state.history.future.length === 0}
-            title="Redo (Ctrl+Y)"
+            title={TOOLTIPS.timeline.redo}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M12 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -324,7 +325,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             className="tl-btn tl-btn-icon"
             id="tl-btn-zoom-out"
             onClick={() => zoom(-1)}
-            title="Zoom out"
+            title={TOOLTIPS.timeline.zoomOut}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
@@ -346,7 +347,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             className="tl-btn tl-btn-icon"
             id="tl-btn-zoom-in"
             onClick={() => zoom(1)}
-            title="Zoom in"
+            title={TOOLTIPS.timeline.zoomIn}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
@@ -363,7 +364,7 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
                 zoomToFit(wrapperRef.current.clientWidth);
               }
             }}
-            title="Fit to screen"
+            title={TOOLTIPS.timeline.fitToScreen}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />

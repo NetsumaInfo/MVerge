@@ -3,11 +3,12 @@ import type { IconType } from "react-icons";
 import { FaBars, FaCog, FaHome } from "react-icons/fa";
 import type { Page } from "./types";
 import { useUIStateStore } from "../../stores/UIStore";
+import { TOOLTIPS } from "../../utils/tooltips";
 
-const buttons: { name: string; page: Page; icon: IconType }[] = [
-  { name: "Home", page: "home", icon: FaHome },
-  { name: "Menu", page: "menu", icon: FaBars },
-  { name: "Settings", page: "settings", icon: FaCog },
+const buttons: { name: string; page: Page; icon: IconType; tooltip: string }[] = [
+  { name: "Home", page: "home", icon: FaHome, tooltip: TOOLTIPS.sidebar.home },
+  { name: "Menu", page: "menu", icon: FaBars, tooltip: TOOLTIPS.sidebar.menu },
+  { name: "Settings", page: "settings", icon: FaCog, tooltip: TOOLTIPS.sidebar.settings },
 ];
 
 export default function SidebarNav() {
@@ -29,7 +30,7 @@ export default function SidebarNav() {
               disabled={isActive}
               aria-current={isActive ? "page" : undefined}
               aria-label={button.name}
-              title={button.name}
+              title={button.tooltip}
             >
               <Icon aria-hidden="true" />
             </button>

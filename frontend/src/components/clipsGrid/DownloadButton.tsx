@@ -1,5 +1,6 @@
 import React from "react";
 import { FiDownload } from "react-icons/fi";
+import { TOOLTIPS } from "../../utils/tooltips";
 
 type DownloadButtonProps = {
   onClick: (e: React.MouseEvent) => void;
@@ -19,7 +20,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ onClick, loading
         e.stopPropagation();
         onClick(e);
       }}
-      title="Download this clip"
+      title={TOOLTIPS.clips.download}
       disabled={loading}
     >
       <FiDownload className={`clip-download-icon download-tone-${tone}`} />

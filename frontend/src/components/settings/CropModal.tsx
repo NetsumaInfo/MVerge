@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from "react-image-crop";
 import { FaUndo, FaRedo, FaArrowsAltH, FaArrowsAltV, FaExpand, FaSyncAlt } from "react-icons/fa";
+import { TOOLTIPS } from "../../utils/tooltips";
 import "react-image-crop/dist/ReactCrop.css";
 
 type CropModalProps = {
@@ -135,7 +136,7 @@ export default function CropModal({
             <FaExpand className="header-icon" />
             <h3>{title}</h3>
           </div>
-          <button className="reset-btn" onClick={handleReset} title="Reset all changes">
+          <button className="reset-btn" onClick={handleReset} title={TOOLTIPS.crop.reset}>
             <FaSyncAlt /> Reset
           </button>
         </div>
@@ -211,23 +212,23 @@ export default function CropModal({
           <div className="toolbar-section">
             <label>Rotate & Flip</label>
             <div className="transform-buttons">
-              <button className="toolbar-btn" onClick={() => setRotation((r) => r - 90)} title="Rotate Left">
+              <button className="toolbar-btn" onClick={() => setRotation((r) => r - 90)} title={TOOLTIPS.crop.rotateLeft}>
                 <FaUndo />
               </button>
-              <button className="toolbar-btn" onClick={() => setRotation((r) => r + 90)} title="Rotate Right">
+              <button className="toolbar-btn" onClick={() => setRotation((r) => r + 90)} title={TOOLTIPS.crop.rotateRight}>
                 <FaRedo />
               </button>
               <button
                 className={`toolbar-btn ${flip.horizontal ? "active" : ""}`}
                 onClick={() => setFlip((f) => ({ ...f, horizontal: !f.horizontal }))}
-                title="Flip Horizontal"
+                title={TOOLTIPS.crop.flipHorizontal}
               >
                 <FaArrowsAltH />
               </button>
               <button
                 className={`toolbar-btn ${flip.vertical ? "active" : ""}`}
                 onClick={() => setFlip((f) => ({ ...f, vertical: !f.vertical }))}
-                title="Flip Vertical"
+                title={TOOLTIPS.crop.flipVertical}
               >
                 <FaArrowsAltV />
               </button>

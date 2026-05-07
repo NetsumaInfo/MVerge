@@ -5,6 +5,7 @@ import {
   subscribeToConsoleLogs,
   type ConsoleEntry,
 } from "../../utils/appConsole";
+import { TOOLTIPS } from "../../utils/tooltips";
 
 
 export default function Console() {
@@ -47,8 +48,8 @@ export default function Console() {
             className="console-action-icon"
             type="button"
             onClick={handleCopy}
-            aria-label="Copy Logs"
-            title="Copy Logs"
+            aria-label={TOOLTIPS.console.copy}
+            title={TOOLTIPS.console.copy}
           >
             <FaCopy aria-hidden="true" />
           </button>
@@ -56,8 +57,8 @@ export default function Console() {
             className="console-action-icon"
             type="button"
             onClick={handleClear}
-            aria-label="Clear Logs"
-            title="Clear Logs"
+            aria-label={TOOLTIPS.console.clear}
+            title={TOOLTIPS.console.clear}
           >
             <FaTrashAlt aria-hidden="true" />
           </button>

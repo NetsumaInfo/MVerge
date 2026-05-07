@@ -1,5 +1,6 @@
 import type React from "react";
 import type { EpisodePanelProps, PointerDragSource } from "../types";
+import { TOOLTIPS } from "../../../utils/tooltips";
 
 type Folder = EpisodePanelProps["episodeFolders"][number];
 
@@ -76,7 +77,11 @@ export default function FolderRow({
           e.stopPropagation();
           onToggleFolderExpanded(folder.id);
         }}
-        aria-label={folder.isExpanded ? "Collapse folder" : "Expand folder"}
+        aria-label={
+          folder.isExpanded
+            ? TOOLTIPS.episodePanel.collapseFolder
+            : TOOLTIPS.episodePanel.expandFolder
+        }
       >
         ▸
       </button>

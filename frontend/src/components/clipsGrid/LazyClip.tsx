@@ -13,6 +13,7 @@ import { FaCheck, FaPlus } from "react-icons/fa";
 import { useAppStateStore } from "../../stores/appStore.ts";
 import { useUIStateStore } from "../../stores/UIStore.ts";
 import { useGeneralSettingsStore, useThemeSettingsStore } from "../../stores/settingsStore.ts";
+import { getTimelineToggleTooltip } from "../../utils/tooltips";
 
 const DOWNLOAD_TONE_SAMPLE_SIZE = 24;
 const DOWNLOAD_TONE_SOURCE_SIZE = 34;
@@ -405,7 +406,7 @@ export const LazyClip = memo(function LazyClip({
         <button
           className={`clip-timeline-toggle ${isSelected ? "active" : ""}`}
           onClick={(e) => onToggleTimeline(clip.id, e)}
-          title={isSelected ? "Remove from timeline" : "Add to timeline"}
+          title={getTimelineToggleTooltip(isSelected)}
         >
           {isSelected ? <FaCheck /> : <FaPlus />}
         </button>

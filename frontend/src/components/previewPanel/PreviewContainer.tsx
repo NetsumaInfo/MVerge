@@ -20,6 +20,7 @@ import {
   getExportProfileSummary,
   supportsClipMerge,
 } from "../../features/export/profiles.ts";
+import { TOOLTIPS } from "../../utils/tooltips";
 type PreviewContainerProps = {
   // Program (Timeline)
   programClip: string | null;
@@ -211,7 +212,7 @@ export default function PreviewContainer (props: PreviewContainerProps) {
             <button
               className="buttons export-dir-browse"
               onClick={handlePickExportDir}
-              title="Browse for output folder"
+              title={TOOLTIPS.preview.browseOutputFolder}
             >
               <FaFolderOpen />
             </button>
