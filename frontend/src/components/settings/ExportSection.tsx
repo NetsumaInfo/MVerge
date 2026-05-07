@@ -3,7 +3,6 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FaEllipsisH,
-  FaInfoCircle,
   FaPlus,
   FaThumbtack,
   FaTrash,
@@ -25,7 +24,6 @@ import {
   getExportProfileSummary,
   isCodecGpuEligible,
   isQuickDownloadCompatibleWorkflow,
-  isXmlTimelineWorkflow,
   getParallelExportLimit,
   getSafeDefaultParallelExports,
   normalizeExportProfile,
@@ -173,6 +171,7 @@ export default function ExportSection() {
   // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [sourceIconPath, setSourceIconPath] = useState<string | null>(null);
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const autoParallelDefaultAppliedRef = useRef<Set<string>>(new Set());
 
   const activeProfile = useMemo(
     () => getActiveExportProfile(exportProfiles, activeExportProfileId),
@@ -220,7 +219,6 @@ export default function ExportSection() {
 
   const encodingWorkflow = usesEncoding(activeProfile.workflow);
   const editorWorkflow = usesEditorTarget(activeProfile.workflow);
-  const xmlTimelineWorkflow = isXmlTimelineWorkflow(activeProfile.workflow);
   const showMergeSetting = supportsClipMerge(activeProfile.workflow);
   const showAudioSetting = supportsAudioMode(activeProfile.workflow);
   const showContainerSetting = supportsContainerSelection(activeProfile.workflow);
@@ -527,13 +525,19 @@ export default function ExportSection() {
           })
         : 1;
 
+    const autoDefaultAlreadyApplied = autoParallelDefaultAppliedRef.current.has(activeProfile.id);
     const shouldApplySafeDefault =
       activeProfile.parallelExports <= 1 &&
-      activeProfile.nvidiaEncoderProfile === "unknown" &&
-      nextParallelLimit > 1;
+      nextParallelLimit > 1 &&
+      (activeProfile.nvidiaEncoderProfile === "unknown" ||
+        (!autoDefaultAlreadyApplied && activeProfile.nvidiaEncoderProfile === resolvedProfile));
     const clampedParallelExports = shouldApplySafeDefault
       ? getSafeDefaultParallelExports(nextParallelLimit)
       : Math.max(1, Math.min(activeProfile.parallelExports, nextParallelLimit));
+
+    if (shouldApplySafeDefault) {
+      autoParallelDefaultAppliedRef.current.add(activeProfile.id);
+    }
 
     if (
       activeProfile.nvidiaEncoderProfile !== resolvedProfile ||
@@ -743,7 +747,7 @@ export default function ExportSection() {
         label="Quick Download Profile"
         description={
           quickDownloadProfileOptions.length > 0
-            ? "Used by clip quick download buttons. XML timeline profiles are hidden because they do not export media files."
+            ? "Used by clip quick download buttons."
             : "Used by clip quick download buttons."
         }
         control={
@@ -954,7 +958,7 @@ export default function ExportSection() {
 
       <ExportSetting
         label="Workflow"
-        description="Select export behavior: files, files + editor import, XML timeline, or direct send."
+        description="Select export behavior: files only, or files + editor import."
         control={
           <Dropdown
             className="settings-wide-dropdown"
@@ -964,16 +968,6 @@ export default function ExportSection() {
           />
         }
       />
-
-      {xmlTimelineWorkflow && (
-        <div className="export-profile-note">
-          <FaInfoCircle />
-          <span>
-            XML source workflow only uses timeline + editor target. Encode/file parameters are hidden because they do not
-            affect this export mode.
-          </span>
-        </div>
-      )}
 
       {showMergeSetting && (
         <ExportSetting
@@ -1098,7 +1092,7 @@ export default function ExportSection() {
             description={
               parallelLocked
                 ? "Enabled only when selected GPU backend supports parallel sessions (non-NVIDIA backends stay single-worker)."
-                : `Detected limit: up to ${parallelLimit} parallel exports for this codec. Default is ${getSafeDefaultParallelExports(parallelLimit)} for stability.`
+                : `Detected limit: up to ${parallelLimit} parallel exports for this codec. This option sets how many exports run at the same time.`
             }
             control={
               <Dropdown
