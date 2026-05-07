@@ -645,7 +645,7 @@ export function getParallelExportLimit(profile: ExportProfile): number {
 }
 
 export function getSafeDefaultParallelExports(limit: number): number {
-  return Math.max(1, Math.min(limit, SAFE_DEFAULT_PARALLEL_EXPORTS));
+  return Math.max(1, Math.ceil(limit / 2));
 }
 
 export function getExportProfileSummary(profile: ExportProfile): string {
