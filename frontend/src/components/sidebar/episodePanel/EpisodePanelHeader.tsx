@@ -1,5 +1,6 @@
 // Episode Panel toolbar. Renders Sort, New Folder, and Clear Cache actions.
 import { FaFolderPlus, FaSortAlphaDown, FaSortAlphaUp, FaTrashAlt } from "react-icons/fa";
+import Tooltip from "../../common/Tooltip";
 import { TOOLTIPS, getSortTooltip } from "../../../utils/tooltips";
 
 type EpisodePanelHeaderProps = {
@@ -28,41 +29,44 @@ export default function EpisodePanelHeader({
       <div className="episode-panel-title">Episode Panel</div>
 
       <div className="episode-panel-actions">
-        <button
-          type="button"
-          className="episode-panel-action icon-only"
-          onClick={() => {
-            onSortEpisodePanel(nextSortDirection);
+        <Tooltip label={sortLabel} side="bottom">
+          <button
+            type="button"
+            className="episode-panel-action icon-only"
+            onClick={() => {
+              onSortEpisodePanel(nextSortDirection);
 
-            setNextSortDirection((prev) =>
-              prev === "asc" ? "desc" : "asc"
-            );
-          }}
-          title={sortLabel}
-          aria-label={sortLabel}
-        >
-          <SortIcon aria-hidden="true" />
-        </button>
+              setNextSortDirection((prev) =>
+                prev === "asc" ? "desc" : "asc"
+              );
+            }}
+            aria-label={sortLabel}
+          >
+            <SortIcon aria-hidden="true" />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          className="episode-panel-action icon-only"
-          onClick={() => openNewFolderModal(null)}
-          title={TOOLTIPS.episodePanel.newFolder}
-          aria-label={TOOLTIPS.episodePanel.newFolder}
-        >
-          <FaFolderPlus aria-hidden="true" />
-        </button>
+        <Tooltip label={TOOLTIPS.episodePanel.newFolder} side="bottom">
+          <button
+            type="button"
+            className="episode-panel-action icon-only"
+            onClick={() => openNewFolderModal(null)}
+            aria-label={TOOLTIPS.episodePanel.newFolder}
+          >
+            <FaFolderPlus aria-hidden="true" />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          className="episode-panel-action icon-only"
-          onClick={openClearConfirmModal}
-          title={TOOLTIPS.episodePanel.clearCache}
-          aria-label={TOOLTIPS.episodePanel.clearCache}
-        >
-          <FaTrashAlt aria-hidden="true" />
-        </button>
+        <Tooltip label={TOOLTIPS.episodePanel.clearCache} side="bottom">
+          <button
+            type="button"
+            className="episode-panel-action icon-only"
+            onClick={openClearConfirmModal}
+            aria-label={TOOLTIPS.episodePanel.clearCache}
+          >
+            <FaTrashAlt aria-hidden="true" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import type { IconType } from "react-icons";
 import { FaBars, FaCog, FaHome } from "react-icons/fa";
 import type { Page } from "./types";
 import { useUIStateStore } from "../../stores/UIStore";
+import Tooltip from "../common/Tooltip";
 import { TOOLTIPS } from "../../utils/tooltips";
 
 const buttons: { name: string; page: Page; icon: IconType; tooltip: string }[] = [
@@ -23,17 +24,18 @@ export default function SidebarNav() {
 
         return (
           <div className="sidebar-button" key={button.page}>
-            <button
-              type="button"
-              className={`sidebar-nav-button${isActive ? " is-active" : ""}`}
-              onClick={() => setActivePage(button.page)}
-              disabled={isActive}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={button.name}
-              title={button.tooltip}
-            >
-              <Icon aria-hidden="true" />
-            </button>
+            <Tooltip label={button.tooltip} side="bottom" className="amv-tooltip--fill">
+              <button
+                type="button"
+                className={`sidebar-nav-button${isActive ? " is-active" : ""}`}
+                onClick={() => setActivePage(button.page)}
+                disabled={isActive}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={button.name}
+              >
+                <Icon aria-hidden="true" />
+              </button>
+            </Tooltip>
           </div>
         );
       })}

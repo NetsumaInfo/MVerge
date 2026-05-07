@@ -3,6 +3,7 @@ import type { UseTimelineReturn } from "../../hooks/useTimeline";
 import TimelineSegmentChip from "./TimelineSegmentChip";
 import TimelinePlayhead from "./TimelinePlayhead";
 import TimelineRuler from "./TimelineRuler";
+import Tooltip from "../common/Tooltip";
 import { TOOLTIPS } from "../../utils/tooltips";
 import "../../styles/home/timeline.css";
 
@@ -241,73 +242,78 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
       {/* ── Toolbar ───────────────────────────────────────────────── */}
       <div className="tl-toolbar" id="timeline-toolbar">
         <div className="tl-toolbar-group">
-          <button
-            className="tl-btn"
-            id="tl-btn-split"
-            disabled={!canSplit}
-            onClick={splitAtPlayhead}
-            title={TOOLTIPS.timeline.split}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M3 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-              <path d="M13 4l-5 4 5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-            </svg>
-            <span>Split</span>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.split} side="bottom">
+            <button
+              className="tl-btn"
+              id="tl-btn-split"
+              disabled={!canSplit}
+              onClick={splitAtPlayhead}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M3 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                <path d="M13 4l-5 4 5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+              </svg>
+              <span>Split</span>
+            </button>
+          </Tooltip>
 
-          <button
-            className="tl-btn"
-            id="tl-btn-merge"
-            disabled={!canMerge}
-            onClick={mergeSelected}
-            title={TOOLTIPS.timeline.merge}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M5 4l-3 4 3 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-              <path d="M11 4l3 4-3 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-            </svg>
-            <span>Merge</span>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.merge} side="bottom">
+            <button
+              className="tl-btn"
+              id="tl-btn-merge"
+              disabled={!canMerge}
+              onClick={mergeSelected}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M5 4l-3 4 3 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                <path d="M11 4l3 4-3 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+              </svg>
+              <span>Merge</span>
+            </button>
+          </Tooltip>
 
-          <button
-            className="tl-btn tl-btn-danger"
-            id="tl-btn-delete"
-            disabled={!canDelete}
-            onClick={deleteSelected}
-            title={TOOLTIPS.timeline.delete}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <span>Delete</span>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.delete} side="bottom">
+            <button
+              className="tl-btn tl-btn-danger"
+              id="tl-btn-delete"
+              disabled={!canDelete}
+              onClick={deleteSelected}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span>Delete</span>
+            </button>
+          </Tooltip>
         </div>
 
         <div className="tl-toolbar-group">
-          <button
-            className="tl-btn tl-btn-icon"
-            onClick={undo}
-            disabled={state.history.past.length === 0}
-            title={TOOLTIPS.timeline.undo}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M4 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M1 10h10a4 4 0 0 0 0-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-          <button
-            className="tl-btn tl-btn-icon"
-            onClick={redo}
-            disabled={state.history.future.length === 0}
-            title={TOOLTIPS.timeline.redo}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M12 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M15 10H5a4 4 0 0 1 0-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.undo} side="bottom">
+            <button
+              className="tl-btn tl-btn-icon"
+              onClick={undo}
+              disabled={state.history.past.length === 0}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M1 10h10a4 4 0 0 0 0-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </Tooltip>
+          <Tooltip label={TOOLTIPS.timeline.redo} side="bottom">
+            <button
+              className="tl-btn tl-btn-icon"
+              onClick={redo}
+              disabled={state.history.future.length === 0}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M15 10H5a4 4 0 0 1 0-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </Tooltip>
         </div>
 
         <div className="tl-toolbar-group tl-toolbar-info">
@@ -321,18 +327,19 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
         </div>
 
         <div className="tl-toolbar-group">
-          <button
-            className="tl-btn tl-btn-icon"
-            id="tl-btn-zoom-out"
-            onClick={() => zoom(-1)}
-            title={TOOLTIPS.timeline.zoomOut}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M4.5 7h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.zoomOut} side="bottom">
+            <button
+              className="tl-btn tl-btn-icon"
+              id="tl-btn-zoom-out"
+              onClick={() => zoom(-1)}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M4.5 7h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </Tooltip>
 
           <div className="tl-zoom-bar" id="tl-zoom-bar">
             <div
@@ -343,35 +350,37 @@ export default function TimelineTrack({ timeline, trackHeight = 96 }: Props) {
             />
           </div>
 
-          <button
-            className="tl-btn tl-btn-icon"
-            id="tl-btn-zoom-in"
-            onClick={() => zoom(1)}
-            title={TOOLTIPS.timeline.zoomIn}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M4.5 7h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M7 4.5v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.zoomIn} side="bottom">
+            <button
+              className="tl-btn tl-btn-icon"
+              id="tl-btn-zoom-in"
+              onClick={() => zoom(1)}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M4.5 7h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M7 4.5v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </Tooltip>
 
-          <button
-            className="tl-btn tl-btn-fit"
-            onClick={() => {
-              if (wrapperRef.current) {
-                zoomToFit(wrapperRef.current.clientWidth);
-              }
-            }}
-            title={TOOLTIPS.timeline.fitToScreen}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M5 8h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <span>Fit</span>
-          </button>
+          <Tooltip label={TOOLTIPS.timeline.fitToScreen} side="bottom">
+            <button
+              className="tl-btn tl-btn-fit"
+              onClick={() => {
+                if (wrapperRef.current) {
+                  zoomToFit(wrapperRef.current.clientWidth);
+                }
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M5 8h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span>Fit</span>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
