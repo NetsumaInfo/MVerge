@@ -99,3 +99,7 @@ lerna-debug.log*
 *.p12
 *.cer
 *.key
+
+# local-only files
+AGENTS.md
+run.bat
