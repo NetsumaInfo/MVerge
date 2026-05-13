@@ -1,10 +1,12 @@
 import React from "react";
 import Sidebar from "./sidebar/Sidebar";
 import Navbar from "./Navbar";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { isVideoBackgroundPath, useThemeSettingsStore } from "../stores/settingsStore";
 
 export interface AppLayoutProps {
   windowWrapperRef: React.RefObject<HTMLDivElement | null>;
-  sidebarProps: React.ComponentProps<typeof Sidebar>;
+  sidebarEnabled: boolean;
   navbarProps: React.ComponentProps<typeof Navbar>;
   dividerProps: {
     onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -18,15 +20,36 @@ export interface AppLayoutProps {
 
 export default function AppLayout({
   windowWrapperRef,
-  sidebarProps,
+  sidebarEnabled,
   navbarProps,
   dividerProps,
   children,
   loadingOverlay,
   isDragging,
 }: AppLayoutProps) {
+  const backgroundMediaPath = useThemeSettingsStore((s) => s.backgroundImagePath);
+  const backgroundVideoSrc = React.useMemo(() => {
+    if (!backgroundMediaPath || !isVideoBackgroundPath(backgroundMediaPath)) {
+      return null;
+    }
+
+    const [cleanPath, query] = backgroundMediaPath.split("?");
+    const src = convertFileSrc(cleanPath);
+    return query ? `${src}?${query}` : src;
+  }, [backgroundMediaPath]);
+
   return (
     <main className="app-root">
+      {backgroundVideoSrc && (
+        <video
+          className="app-bg-video"
+          src={backgroundVideoSrc}
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      )}
       {loadingOverlay}
       {isDragging && (
         <div className="dragging-overlay">
@@ -41,9 +64,9 @@ export default function AppLayout({
           ["--amverge-divider-offset" as any]: `${dividerProps.dividerOffsetPx}px`,
         }}
       >
-        {sidebarProps.sideBarEnabled && (
+        {sidebarEnabled && (
           <>
-            <Sidebar {...sidebarProps} />
+            <Sidebar />
             <div
               className="divider sidebar-splitter"
               onPointerDown={dividerProps.onPointerDown}

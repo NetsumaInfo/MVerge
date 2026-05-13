@@ -1,16 +1,15 @@
 import { useState } from "react";
-import SettingsSection from "../components/menu/SettingsSection";
-import AboutSection from "../components/menu/AboutSection";
-import ConsoleSection from "../components/menu/ConsoleSection";
-import LogsSection from "../components/menu/LogsSection";
-import CreditSection from "../components/menu/CreditSection";
-
+import About from "../components/menu/About";
+import Console from "../components/menu/Console";
+import PatchNotes from "../components/menu/PatchNotes";
+import Credits from "../components/menu/Credits";
+import BugReport from "../components/menu/BugReport";
 const PAGES = [
   { key: "about", label: "About" },
-  { key: "settings", label: "Settings" },
   { key: "console", label: "Console" },
   { key: "logs", label: "Update logs" },
   { key: "credits", label: "Credits" },
+  { key: "bugreport", label: "Report Bug" }
 ];
 
 export default function Menu() {
@@ -34,11 +33,11 @@ export default function Menu() {
       </div>
       <div className="menu-content">
         <div className="menu-section">
-          {activePage === "about" && <AboutSection />}
-          {activePage === "settings" && <SettingsSection />}
-          {activePage === "console" && <ConsoleSection />}
-          {activePage === "logs" && <LogsSection />}
-          {activePage === "credits" && <CreditSection />}
+          {activePage === "about" && <About />}
+          {activePage === "console" && <Console />}
+          {activePage === "logs" && <PatchNotes />}
+          {activePage === "credits" && <Credits />}
+          {activePage === "bugreport" && <BugReport />}
         </div>
       </div>
     </div>
